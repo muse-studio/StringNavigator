@@ -1,0 +1,6 @@
+from music21 import environment
+
+us = environment.UserSettings()
+
+print(us["musicxmlPath"])
+print(us["musescoreDirectPNGPath"])
