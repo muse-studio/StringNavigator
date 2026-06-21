@@ -63,7 +63,20 @@ def select_musicxml_file_dialog():
 
     return Path(file_path)
 
+def select_output_folder_dialog():
+    root = tk.Tk()
+    root.withdraw()
 
+    folder_path = filedialog.askdirectory(
+        title="PDFの保存先フォルダを選択してください"
+    )
+
+    root.destroy()
+
+    if not folder_path:
+        raise FileNotFoundError("保存先フォルダが選択されませんでした。")
+
+    return Path(folder_path)
 
 
 
@@ -589,11 +602,19 @@ if __name__ == "__main__":
     # 楽譜に運指を書き込んで出力
     annotated_score = annotate_score_with_fingering(score, best_path, mode_name)
 
-    output_base = input("\n出力ファイル名（拡張子なし、未入力なら fingering_result）:").strip()
-    if output_base == "":
-        output_base = "fingering_result"
+    output_dir = select_output_folder_dialog()
+
+    print("\nPDF保存先フォルダ：")
+    print(output_dir)
+
+    output_name = input("\n出力ファイル名（拡張子なし、未入力なら fingering_result）:").strip()
+    if output_name == "":
+        output_name = "fingering_result"
+
+    output_base = str(output_dir / output_name)
 
     write_annotated_outputs(annotated_score, output_base)
 
     # メモ化が効いているか確認
     print_cache_info()
+
