@@ -358,6 +358,52 @@ def C_FI_press(fi_i):
 
 
 # 式(12)
+def detect_segment_boundaries(
+        score,
+        note_lengths,
+        long_note_threshold=2.0):
+
+    boundaries = set()
+
+    note_index = 0
+
+    # --------------------
+    # 二重線で区切る
+    # --------------------
+    for measure in score.parts[0].getElementsByClass("Measure"):
+
+        notes_in_measure = list(measure.recurse().notes)
+        note_index += len(notes_in_measure)
+
+        right_barline = measure.rightBarline
+
+        if right_barline is not None:
+
+            if right_barline.type in [
+                "double",
+                "final",
+                "light-light",
+                "light-heavy"
+            ]:
+
+                if note_index < len(note_lengths):
+                    boundaries.add(note_index)
+
+    # --------------------
+    # 長い音符で区切る
+    # --------------------
+    if long_note_threshold is not None:
+        for i, length in enumerate(note_lengths):
+
+            if length >= long_note_threshold:
+
+                if i + 1 < len(note_lengths):
+                    boundaries.add(i + 1)
+
+    return sorted(boundaries)
+
+
+
 def estimate_fingering(pitches, note_lengths, L):
     if len(pitches) != len(note_lengths):
         raise ValueError("pitches と note_lengths の長さが一致していません")
@@ -425,6 +471,55 @@ def estimate_fingering(pitches, note_lengths, L):
 
     best_path.reverse()
     return best_path
+
+def estimate_fingering_segmented(
+        score,
+        pitches,
+        note_lengths,
+        L,
+        long_note_threshold=2.0):
+
+    boundaries = detect_segment_boundaries(
+        score,
+        note_lengths,
+        long_note_threshold
+    )
+
+    segments = []
+
+    start = 0
+
+    for end in boundaries:
+        segments.append((start, end))
+        start = end
+
+    segments.append((start, len(pitches)))
+
+    print(f"\n{len(segments)}個の区間に分割しました")
+
+    best_path = []
+
+    for seg_no, (s, e) in enumerate(segments):
+
+        print(
+            f"\r[{seg_no+1}/{len(segments)}] "
+            f"{e-s}音 DP実行中...",
+            end="",
+            flush=True
+        )
+        segment_path = estimate_fingering(
+            pitches[s:e],
+            note_lengths[s:e],
+            L
+        )
+
+        best_path.extend(segment_path)
+
+    print()
+
+    return best_path
+
+
 
 
 # MusicXML読み込み関数
@@ -501,6 +596,28 @@ def input_mode_and_L():
             L_mid = input_float_with_default("Intermediate の L", 0.1)
             return "Intermediate", L_mid
         print("1 か 2 を入力してください。")
+
+
+def input_long_note_threshold():
+    print("\n--- 区切る長い音符の設定 ---")
+    print("1: 長い音符でも区切る")
+    print("2: 長い音符では区切らない（二重線のみ）")
+
+    while True:
+        choice = input("選んでください [1/2]: ").strip()
+
+        if choice == "1":
+            return input_float_with_default(
+                "何秒以上の音符で区切りますか？",
+                1.0
+            )
+
+        if choice == "2":
+            return None
+
+        print("1 か 2 を入力してください。")
+
+
 
 
 def fingering_label(state):
@@ -596,7 +713,8 @@ if __name__ == "__main__":
     mode_name, L = input_mode_and_L()
 
     print(f"\n{mode_name}")
-    best_path = estimate_fingering(pitches, note_lengths, L)
+    long_note_threshold = input_long_note_threshold()
+    best_path = estimate_fingering_segmented(score, pitches, note_lengths, L, long_note_threshold=long_note_threshold)
     print_result(best_path)
 
     # 楽譜に運指を書き込んで出力
