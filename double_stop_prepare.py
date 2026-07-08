@@ -35,7 +35,13 @@ def generate_double_stop_music_states(pitch_low, pitch_high, generate_states_fun
             continue
 
         # 低音は低い弦、高音は高い弦
+                # 低音は低い弦、高音は高い弦
         if low_state.sp >= high_state.sp:
+            continue
+
+        # 追加条件：
+        # 二重音は同じポジションで取る
+        if low_state.hp != high_state.hp:
             continue
 
         music_states.append(MusicState((low_state, high_state)))
