@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from music21 import converter, note, chord, tempo, articulations, expressions
 
+from double_stop_prepare import generate_event_music_states
+
 
 Strings = {
     0: ("G", 55),
@@ -535,25 +537,63 @@ def load_musicxml(path):
 
     seconds_per_quarter = 60 / bpm
 
-    pitches = []
+    events = []
     note_lengths = []
 
-    # あとで楽譜に運指を書き込むため、score も返す
     for element in score.flatten().notes:
         if isinstance(element, note.Note):
-            pitches.append(element.pitch.midi)
+            events.append([element.pitch.midi])
             note_lengths.append(float(element.quarterLength) * seconds_per_quarter)
 
         elif isinstance(element, chord.Chord):
-            highest_note = element.pitches[-1]
-            pitches.append(highest_note.midi)
+            pitches = sorted([p.midi for p in element.pitches])
+
+            if len(pitches) != 2:
+                raise ValueError(
+                    f"今は二重音のみ対応です。{len(pitches)}音の重音があります。"
+                )
+
+            events.append(pitches)
             note_lengths.append(float(element.quarterLength) * seconds_per_quarter)
 
     print("BPM:", bpm)
 
-    return score, pitches, note_lengths
+    return score, events, note_lengths
+
+def state_to_text(state):
+    string_name = Strings[state.sp][0]
+    return f"{string_name}線, {state.fn}指, HP={state.hp}, FI={state.fi}"
 
 
+def print_music_state_candidates(events):
+    print("\n=== 単音・二重音候補確認 ===")
+
+    for i, event in enumerate(events, start=1):
+        candidates = generate_event_music_states(
+            event,
+            generate_states_cached
+        )
+
+        if len(event) == 1:
+            print(f"\n{i}音目：単音 pitch={event[0]}")
+        else:
+            print(f"\n{i}音目：二重音 pitches={event}")
+
+        print(f"候補数：{len(candidates)}")
+
+        for j, music_state in enumerate(candidates[:10], start=1):
+            print(f"候補{j}")
+
+            if music_state.is_single():
+                print("  " + state_to_text(music_state.states[0]))
+
+            elif music_state.is_double_stop():
+                low_state, high_state = music_state.states
+                print("  低音：" + state_to_text(low_state))
+                print("  高音：" + state_to_text(high_state))
+
+        if len(candidates) > 10:
+            print(f"... 他 {len(candidates) - 10} 個")
 
 
 # 結果表示関数
@@ -702,10 +742,15 @@ if __name__ == "__main__":
 
 
     # load_musicxml は score, pitches, note_lengths の3つを返す
-    score, pitches, note_lengths = load_musicxml(xml_path)
+    score, events, note_lengths = load_musicxml(xml_path)
 
-    print("pitch:", pitches)
+    print("events:", events)
     print("note_lengths:", note_lengths)
+
+    print_music_state_candidates(events)
+
+    # 今回は候補確認だけで終了
+    raise SystemExit
 
     input_parameters()
 
