@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from functools import lru_cache
 from music21 import converter, note, chord, tempo, articulations, expressions
 
-from double_stop_prepare import generate_event_music_states
+from double_stop_prepare import (
+    generate_event_music_states,
+    music_state_pressing_cost,
+    music_state_transition_cost,
+)
 
 
 Strings = {
@@ -406,18 +410,21 @@ def detect_segment_boundaries(
 
 
 
-def estimate_fingering(pitches, note_lengths, L):
-    if len(pitches) != len(note_lengths):
-        raise ValueError("pitches と note_lengths の長さが一致していません")
+def estimate_fingering(events, note_lengths, L):
+    if len(events) != len(note_lengths):
+        raise ValueError("events と note_lengths の長さが一致していません")
 
-    # ここで generate_states_cached を使う
-    all_states = [generate_states_cached(pitch) for pitch in pitches]
+    # 単音・二重音の両方を MusicState として候補生成する
+    all_music_states = [
+        generate_event_music_states(event, generate_states_cached)
+        for event in events
+    ]
 
-    for i, states in enumerate(all_states):
-        if len(states) == 0:
-            raise ValueError(f"{i}番目の音で有効な状態がありません")
+    for i, music_states in enumerate(all_music_states):
+        if len(music_states) == 0:
+            raise ValueError(f"{i}番目の音で有効な MusicState がありません: event={events[i]}")
 
-    N = len(pitches)
+    N = len(events)
 
     dp = []
     back = []
@@ -428,9 +435,16 @@ def estimate_fingering(pitches, note_lengths, L):
 
     e0 = expression_degree(note_lengths[0], L)
 
-    for state in all_states[0]:
-        first_dp[state] = pressing_cost(state, pitches[0], e0)
-        first_back[state] = None
+    for music_state in all_music_states[0]:
+        first_dp[music_state] = music_state_pressing_cost(
+            music_state,
+            events[0],
+            e0,
+            pressing_cost,
+            C_HP_press,
+            C_FI_press
+        )
+        first_back[music_state] = None
 
     dp.append(first_dp)
     back.append(first_back)
@@ -442,41 +456,52 @@ def estimate_fingering(pitches, note_lengths, L):
         current_dp = {}
         current_back = {}
 
-        for state_j in all_states[n]:
+        for music_state_j in all_music_states[n]:
             best_cost = math.inf
             best_prev = None
 
-            for state_i in all_states[n - 1]:
+            for music_state_i in all_music_states[n - 1]:
                 cost = (
-                    dp[n - 1][state_i]
-                    + transition_cost(state_i, state_j)
-                    + pressing_cost(state_j, pitches[n], e)
+                    dp[n - 1][music_state_i]
+                    + music_state_transition_cost(
+                        music_state_i,
+                        music_state_j,
+                        transition_cost
+                    )
+                    + music_state_pressing_cost(
+                        music_state_j,
+                        events[n],
+                        e,
+                        pressing_cost,
+                        C_HP_press,
+                        C_FI_press
+                    )
                 )
 
                 if cost < best_cost:
                     best_cost = cost
-                    best_prev = state_i
+                    best_prev = music_state_i
 
-            current_dp[state_j] = best_cost
-            current_back[state_j] = best_prev
+            current_dp[music_state_j] = best_cost
+            current_back[music_state_j] = best_prev
 
         dp.append(current_dp)
         back.append(current_back)
 
-    last_state = min(dp[-1], key=dp[-1].get)
+    last_music_state = min(dp[-1], key=dp[-1].get)
 
-    best_path = [last_state]
+    best_path = [last_music_state]
 
     for n in range(N - 1, 0, -1):
-        last_state = back[n][last_state]
-        best_path.append(last_state)
+        last_music_state = back[n][last_music_state]
+        best_path.append(last_music_state)
 
     best_path.reverse()
     return best_path
 
 def estimate_fingering_segmented(
         score,
-        pitches,
+        events,
         note_lengths,
         L,
         long_note_threshold=2.0):
@@ -495,7 +520,7 @@ def estimate_fingering_segmented(
         segments.append((start, end))
         start = end
 
-    segments.append((start, len(pitches)))
+    segments.append((start, len(events)))
 
     print(f"\n{len(segments)}個の区間に分割しました")
 
@@ -510,7 +535,7 @@ def estimate_fingering_segmented(
             flush=True
         )
         segment_path = estimate_fingering(
-            pitches[s:e],
+            events[s:e],
             note_lengths[s:e],
             L
         )
@@ -598,29 +623,16 @@ def print_music_state_candidates(events):
 
 # 結果表示関数
 def print_result(best_path):
-    string_name = {
-        0: "G",
-        1: "D",
-        2: "A",
-        3: "E",
-    }
+    for i, music_state in enumerate(best_path):
+        if music_state.is_single():
+            print(f"{i + 1}音目：単音")
+            print("  " + state_to_text(music_state.states[0]))
 
-    finger_names = {
-        0: "0",
-        1: "1",
-        2: "2",
-        3: "3",
-        4: "4",
-    }
-
-    for i, state in enumerate(best_path):
-        print(
-            f"{i + 1}音目："
-            f"{string_name[state.sp]}, "
-            f"{finger_names[state.fn]}, "
-            f"HP = {state.hp}, "
-            f"FI = {state.fi}"
-        )
+        elif music_state.is_double_stop():
+            low_state, high_state = music_state.states
+            print(f"{i + 1}音目：二重音")
+            print("  低音：" + state_to_text(low_state))
+            print("  高音：" + state_to_text(high_state))
 
 
 def input_mode_and_L():
@@ -690,15 +702,49 @@ def annotate_score_with_fingering(score, best_path, mode_name):
 
     clear_old_fingering_marks(score)
 
-    for element, state in zip(notes_in_score, best_path):
-        # 指番号は音符上の fingering として追加
-        element.articulations.append(articulations.Fingering(str(state.fn)))
+    for element, music_state in zip(notes_in_score, best_path):
 
-        # 弦名も確認できるように、小さい文字情報として追加
-        # PDF上では環境によって表示位置が違うことがあります。
-        text = expressions.TextExpression(f"String:{Strings[state.sp][0]}")
-        text.placement = "below"
-        element.expressions.append(text)
+        # =========================
+        # 単音の場合
+        # =========================
+        if music_state.is_single():
+            state = music_state.states[0]
+
+            element.articulations.append(
+                articulations.Fingering(str(state.fn))
+            )
+
+            text = expressions.TextExpression(f"String:{Strings[state.sp][0]}")
+            text.placement = "below"
+            element.expressions.append(text)
+
+        # =========================
+        # 二重音の場合
+        # =========================
+        elif music_state.is_double_stop():
+            low_state, high_state = music_state.states
+
+            # 表示は上の音から下の音へ
+            # 例：低音1指・高音3指 → 3 / 1
+            fingering_text = f"{high_state.fn}\n{low_state.fn}"
+
+            fingering = articulations.Fingering(fingering_text)
+            fingering.placement = "above"
+            element.articulations.append(fingering)
+
+            string_text = (
+                f"String:{Strings[low_state.sp][0]}-{Strings[high_state.sp][0]}"
+            )
+            text = expressions.TextExpression(string_text)
+            text.placement = "below"
+            element.expressions.append(text)
+
+        else:
+            raise ValueError("単音と二重音のみ対応しています。")
+
+    if score.metadata is None:
+        from music21 import metadata
+        score.metadata = metadata.Metadata()
 
     score.metadata.title = f"Fingering Result - {mode_name}"
     return score
@@ -749,8 +795,7 @@ if __name__ == "__main__":
 
     print_music_state_candidates(events)
 
-    # 今回は候補確認だけで終了
-    raise SystemExit
+    # 候補確認後、そのままDPとPDF出力まで実行する
 
     input_parameters()
 
@@ -759,7 +804,7 @@ if __name__ == "__main__":
 
     print(f"\n{mode_name}")
     long_note_threshold = input_long_note_threshold()
-    best_path = estimate_fingering_segmented(score, pitches, note_lengths, L, long_note_threshold=long_note_threshold)
+    best_path = estimate_fingering_segmented(score, events, note_lengths, L, long_note_threshold=long_note_threshold)
     print_result(best_path)
 
     # 楽譜に運指を書き込んで出力
