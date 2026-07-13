@@ -2,9 +2,10 @@ import math
 import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
-from dataclasses import dataclass
 from functools import lru_cache
 from music21 import converter, note, chord, tempo, articulations, expressions
+
+from models.state import State
 
 from double_stop_prepare import (
     generate_event_music_states,
@@ -127,15 +128,6 @@ def input_parameters():
     print("\n設定されたパラメータ:")
     for key, value in PARAMS.items():
         print(f"{key} = {value}")
-
-
-@dataclass(frozen=True)
-class State:
-    sp: int
-    fn: int
-    hp: int
-    fi: tuple
-
 
 # e：表現度
 def expression_degree(note_length, L):
@@ -612,7 +604,7 @@ def print_music_state_candidates(events):
             if music_state.is_single():
                 print("  " + state_to_text(music_state.states[0]))
 
-            elif music_state.is_double_stop():
+            elif music_state.is_double():
                 low_state, high_state = music_state.states
                 print("  低音：" + state_to_text(low_state))
                 print("  高音：" + state_to_text(high_state))
@@ -628,7 +620,7 @@ def print_result(best_path):
             print(f"{i + 1}音目：単音")
             print("  " + state_to_text(music_state.states[0]))
 
-        elif music_state.is_double_stop():
+        elif music_state.is_double():
             low_state, high_state = music_state.states
             print(f"{i + 1}音目：二重音")
             print("  低音：" + state_to_text(low_state))
@@ -721,7 +713,7 @@ def annotate_score_with_fingering(score, best_path, mode_name):
         # =========================
         # 二重音の場合
         # =========================
-        elif music_state.is_double_stop():
+        elif music_state.is_double():
             low_state, high_state = music_state.states
 
             # 表示は上の音から下の音へ

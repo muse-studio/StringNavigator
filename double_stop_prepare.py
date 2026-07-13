@@ -1,16 +1,5 @@
-from dataclasses import dataclass
 from itertools import product
-
-
-@dataclass(frozen=True)
-class MusicState:
-    states: tuple
-
-    def is_single(self):
-        return len(self.states) == 1
-
-    def is_double_stop(self):
-        return len(self.states) == 2
+from models.state import MusicState
 
 
 def generate_single_music_states(pitch, generate_states_func):
@@ -20,7 +9,7 @@ def generate_single_music_states(pitch, generate_states_func):
     )
 
 
-def generate_double_stop_music_states(pitch_low, pitch_high, generate_states_func):
+def generate_double_music_states(pitch_low, pitch_high, generate_states_func):
     low_states = generate_states_func(pitch_low)
     high_states = generate_states_func(pitch_high)
 
@@ -47,7 +36,7 @@ def generate_event_music_states(event, generate_states_func):
         return generate_single_music_states(event[0], generate_states_func)
 
     if len(event) == 2:
-        return generate_double_stop_music_states(
+        return generate_double_music_states(
             event[0],
             event[1],
             generate_states_func
@@ -60,7 +49,7 @@ def generate_event_music_states(event, generate_states_func):
 # 重音の指の形コスト
 # =========================
 
-def double_stop_finger_shape_cost(low_state, high_state, pitch_low, pitch_high):
+def double_finger_shape_cost(low_state, high_state, pitch_low, pitch_high):
     interval = pitch_high - pitch_low
     fingers = (low_state.fn, high_state.fn)
 
@@ -100,22 +89,22 @@ def double_stop_finger_shape_cost(low_state, high_state, pitch_low, pitch_high):
 # 重音専用 押弦コスト
 # =========================
 
-def double_stop_pressing_cost(
+def double_pressing_cost(
         music_state,
         event,
         e,
         C_HP_press,
         C_FI_press
 ):
-    if not music_state.is_double_stop():
-        raise ValueError("double_stop_pressing_cost には二重音 MusicState を渡してください。")
+    if not music_state.is_double():
+        raise ValueError("double_pressing_cost には二重音 MusicState を渡してください。")
 
     low_state, high_state = music_state.states
 
     cost = 0.0
 
     # ① 重音として自然な指の形か
-    cost += double_stop_finger_shape_cost(
+    cost += double_finger_shape_cost(
         low_state,
         high_state,
         event[0],
@@ -155,8 +144,8 @@ def music_state_pressing_cost(
         pitch = event[0]
         return single_pressing_cost_func(state, pitch, e)
 
-    if music_state.is_double_stop():
-        return double_stop_pressing_cost(
+    if music_state.is_double():
+        return double_pressing_cost(
             music_state,
             event,
             e,
