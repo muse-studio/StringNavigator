@@ -1,39 +1,35 @@
 import math
 import tkinter as tk
+
 from tkinter import filedialog
 from pathlib import Path
 from functools import lru_cache
-from music21 import converter, note, chord, tempo, articulations, expressions
 
-from models.state import State
+from music21 import (
+    articulations,
+    chord,
+    converter,
+    expressions,
+    note,
+    tempo,
+)
+
+from generators.state_generator import (
+    Fingers,
+    FI_PATTERNS,
+    Strings,
+    finger_offset,
+    generate_event_music_states,
+    generate_states_cached,
+)
+
+from generators.state_generator import Strings, Fingers
 
 from double_stop_prepare import (
-    generate_event_music_states,
     music_state_pressing_cost,
     music_state_transition_cost,
 )
 
-
-Strings = {
-    0: ("G", 55),
-    1: ("D", 62),
-    2: ("A", 69),
-    3: ("E", 76),
-}
-
-Fingers = [0, 1, 2, 3, 4]
-
-# FI  1=半音、2=全音
-FI_PATTERNS = [
-    (1, 1, 1),
-    (1, 1, 2),
-    (1, 2, 1),
-    (1, 2, 2),
-    (2, 1, 1),
-    (2, 1, 2),
-    (2, 2, 1),
-    (2, 2, 2),
-]
 
 
 # k と σ^2 の設定値
@@ -134,60 +130,6 @@ def expression_degree(note_length, L):
     if L == math.inf:
         return 0.0
     return min(note_length / L, 1.0)
-
-
-# finger_offsetの定義
-def finger_offset(fn, fi):
-    if fn == 0:
-        return 0
-    if fn == 1:
-        return 0
-    if fn == 2:
-        return fi[0]
-    if fn == 3:
-        return fi[0] + fi[1]
-    if fn == 4:
-        return fi[0] + fi[1] + fi[2]
-
-
-# s：状態
-# s = {sp, fn, hp, fi}
-def generate_states(pitch):
-    states = []
-
-    for sp, (string_name, open_pitch) in Strings.items():
-        semitone = pitch - open_pitch
-
-        if semitone < 0:
-            continue
-
-        for fi in FI_PATTERNS:
-            for fn in Fingers:
-
-                # 開放弦の場合
-                if fn == 0:
-                    if semitone == 0:
-                        states.append(State(sp, fn, 0, fi))
-                    continue
-
-                # 押弦の場合
-                offset = finger_offset(fn, fi)
-                hp = semitone - offset - 1
-
-                # 開放弦のすぐ上の音は1の指で取る場合はここを有効化
-                # if semitone in [1, 2] and fn != 1:
-                #     continue
-
-                if 0 <= hp < 24:
-                    states.append(State(sp, fn, hp, fi))
-
-    return tuple(states)
-
-
-# generate_states(pitch) のメモ化版
-@lru_cache(maxsize=None)
-def generate_states_cached(pitch):
-    return generate_states(pitch)
 
 
 # 確率密度関数
