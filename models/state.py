@@ -16,3 +16,13 @@ class MusicState:
     
     def is_double(self):
         return len(self.states) == 2
+
+    def is_triple(self):
+        return len(self.states) == 3
+
+    def is_quadruple(self):
+        return len(self.states) == 4
+
+
+    def note_count(self):
+        return len(self.states)
