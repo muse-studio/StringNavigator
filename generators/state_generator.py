@@ -116,58 +116,154 @@ def generate_single_music_states(
     )
 
 
-def generate_double_music_states(
-        pitch_low,
-        pitch_high,
+def is_valid_multiple_state_combination(states):
+    """
+    二重音・三重音・四重音のStateが演奏可能か判定する。
+    """
+
+    string_numbers = [
+        state.sp
+        for state in states
+    ]
+
+    # 同じ弦で複数の音は演奏できない
+    if len(set(string_numbers)) != len(string_numbers):
+        return False
+
+    # 低い音から高い音へG-D-A-Eの順にする
+    if string_numbers != sorted(string_numbers):
+        return False
+
+    # 使用する弦が隣り合っていること
+    for i in range(len(string_numbers) - 1):
+        if string_numbers[i + 1] - string_numbers[i] != 1:
+            return False
+
+    # 同じポジションで演奏する
+    # 開放弦以外のHPを取得する
+    pressed_positions = {
+        state.hp
+        for state in states
+        if state.fn != 0
+    }
+
+    # 押弦している音同士は同じポジションにする
+    if len(pressed_positions) > 1:
+        return False
+
+    # 開放弦以外のFIを取得する
+    pressed_fi_patterns = {
+        state.fi
+        for state in states
+        if state.fn != 0
+    }
+
+    # 押弦している音同士では同じFIを使用する
+    if len(pressed_fi_patterns) > 1:
+        return False
+
+    return True
+
+
+
+def generate_multiple_music_states(
+        pitches,
         generate_states_func
 ):
+
     """
-    二重音を演奏可能なMusicState候補を生成する。
+    二重音・三重音・四重音が演奏できるMusicState候補を生成する
     """
-    low_states = generate_states_func(pitch_low)
-    high_states = generate_states_func(pitch_high)
+
+    state_groups = [
+        generate_states_func(pitch)
+        for pitch in pitches
+    ]
 
     music_states = []
 
-    for low_state, high_state in product(
-        low_states,
-        high_states
-    ):
-        # 同じ弦は使用できない
-        if low_state.sp == high_state.sp:
-            continue
-
-        # 低音は低い弦、高音は高い弦で演奏する
-        if low_state.sp >= high_state.sp:
-            continue
-
-        # 二重音は同じポジションで演奏する
-        if low_state.hp != high_state.hp:
+    for states in product(*state_groups):
+        if not is_valid_multiple_state_combination(states):
             continue
 
         music_states.append(
-            MusicState(
-                (
-                    low_state,
-                    high_state
-                )
-            )
+            MusicState(tuple(states))
         )
 
     return tuple(music_states)
 
 
+
+def generate_double_music_states(
+        pitch_low,
+        pitch_high,
+        generate_states_func
+):
+
+    """
+    二重音を演奏可能なMusicState候補を生成する
+    """
+    return generate_multiple_music_states(
+        (pitch_low, pitch_high),
+        generate_states_func
+    )
+
+
+def generate_triple_music_states(
+        pitch_low,
+        pitch_middle,
+        pitch_high,
+        generate_states_func
+):
+
+    """
+    三重音を演奏可能なMusicState候補を生成する
+    """
+    return generate_multiple_music_states(
+        (
+        pitch_low,
+        pitch_middle,
+        pitch_high
+        ),
+        generate_states_func
+    )
+
+def generate_quadruple_music_states(
+        pitch_1,
+        pitch_2,
+        pitch_3,
+        pitch_4,
+        generate_states_func
+):
+    """
+    四重音を演奏可能なMusicState候補を生成する
+    """
+    return generate_multiple_music_states(
+        (
+            pitch_1,
+            pitch_2,
+            pitch_3,
+            pitch_4,
+        ),
+        generate_states_func
+    )
+
 def generate_event_music_states(
         event,
         generate_states_func=generate_states_cached
 ):
+
     """
-    単音または二重音のイベントからMusicState候補を生成する。
+    単音・二重音・三重音・四重音のイベントから
+    MusicState候補を生成する。
 
     eventの例:
-        単音: [69]
+        単音:   [69]
         二重音: [62, 69]
+        三重音: [55, 62, 69]
+        四重音: [55, 62, 69, 76]
     """
+
     if len(event) == 1:
         return generate_single_music_states(
             event[0],
@@ -181,6 +277,44 @@ def generate_event_music_states(
             generate_states_func
         )
 
+    if len(event) == 3:
+        return generate_triple_music_states(
+            event[0],
+            event[1],
+            event[2],
+            generate_states_func
+        )
+
+    if len(event) == 4:
+        return generate_quadruple_music_states(
+            event[0],
+            event[1],
+            event[2],
+            event[3],
+            generate_states_func
+        )
+
     raise ValueError(
-        "今は単音と二重音のみ対応しています。"
+        "１～４音に対応。"
     )
+
+
+
+if __name__ == "__main__":
+    test_events = [
+        [69],
+        [62, 69],
+        [55, 62, 69],
+        [55, 62, 69, 76],
+    ]
+
+    for event in test_events:
+        candidates = generate_event_music_states(event)
+
+        print(f"\nevent={event}")
+        print(f"音数={len(event)}")
+        print(f"候補数={len(candidates)}")
+
+        if candidates:
+            print("最初の候補:")
+            print(candidates[0])

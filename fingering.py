@@ -348,7 +348,8 @@ def estimate_fingering(events, note_lengths, L):
     if len(events) != len(note_lengths):
         raise ValueError("events と note_lengths の長さが一致していません")
 
-    # 単音・二重音の両方を MusicState として候補生成する
+    # 単音・二重音・三重音・四重音を
+    # MusicStateとして候補生成する
     all_music_states = [
         generate_event_music_states(event, generate_states_cached)
         for event in events
@@ -484,10 +485,13 @@ def estimate_fingering_segmented(
 
 
 # MusicXML読み込み関数
+# MusicXML読み込み関数
 def load_musicxml(path):
     score = converter.parse(str(path))
 
-    tempos = score.flatten().getElementsByClass(tempo.MetronomeMark)
+    tempos = score.flatten().getElementsByClass(
+        tempo.MetronomeMark
+    )
 
     if len(tempos) > 0 and tempos[0].number is not None:
         bpm = tempos[0].number
@@ -500,20 +504,40 @@ def load_musicxml(path):
     note_lengths = []
 
     for element in score.flatten().notes:
+        # =========================
+        # 単音
+        # =========================
         if isinstance(element, note.Note):
-            events.append([element.pitch.midi])
-            note_lengths.append(float(element.quarterLength) * seconds_per_quarter)
+            events.append(
+                [element.pitch.midi]
+            )
 
+            note_lengths.append(
+                float(element.quarterLength)
+                * seconds_per_quarter
+            )
+
+        # =========================
+        # 2～4重音
+        # =========================
         elif isinstance(element, chord.Chord):
-            pitches = sorted([p.midi for p in element.pitches])
+            pitches = sorted(
+                p.midi
+                for p in element.pitches
+            )
 
-            if len(pitches) != 2:
+            if len(pitches) < 2 or len(pitches) > 4:
                 raise ValueError(
-                    f"今は二重音のみ対応です。{len(pitches)}音の重音があります。"
+                    "1音から4音までに対応しています。"
+                    f"{len(pitches)}音の重音があります。"
                 )
 
             events.append(pitches)
-            note_lengths.append(float(element.quarterLength) * seconds_per_quarter)
+
+            note_lengths.append(
+                float(element.quarterLength)
+                * seconds_per_quarter
+            )
 
     print("BPM:", bpm)
 
@@ -525,7 +549,14 @@ def state_to_text(state):
 
 
 def print_music_state_candidates(events):
-    print("\n=== 単音・二重音候補確認 ===")
+    print("\n=== 1～4音の候補確認 ===")
+
+    event_names = {
+        1: "単音",
+        2: "二重音",
+        3: "三重音",
+        4: "四重音",
+    }
 
     for i, event in enumerate(events, start=1):
         candidates = generate_event_music_states(
@@ -533,40 +564,90 @@ def print_music_state_candidates(events):
             generate_states_cached
         )
 
-        if len(event) == 1:
-            print(f"\n{i}音目：単音 pitch={event[0]}")
-        else:
-            print(f"\n{i}音目：二重音 pitches={event}")
+        event_name = event_names[len(event)]
+
+        print(
+            f"\n{i}音目："
+            f"{event_name} pitches={event}"
+        )
 
         print(f"候補数：{len(candidates)}")
 
-        for j, music_state in enumerate(candidates[:10], start=1):
+        for j, music_state in enumerate(
+            candidates[:10],
+            start=1
+        ):
             print(f"候補{j}")
 
-            if music_state.is_single():
-                print("  " + state_to_text(music_state.states[0]))
+            states = music_state.states
+            state_count = len(states)
 
-            elif music_state.is_double():
-                low_state, high_state = music_state.states
-                print("  低音：" + state_to_text(low_state))
-                print("  高音：" + state_to_text(high_state))
+            for state_index, state in enumerate(
+                states,
+                start=1
+            ):
+                if state_count == 1:
+                    label = "単音"
+
+                elif state_index == 1:
+                    label = "最低音"
+
+                elif state_index == state_count:
+                    label = "最高音"
+
+                else:
+                    label = f"中間音{state_index - 1}"
+
+                print(
+                    f"  {label}："
+                    + state_to_text(state)
+                )
 
         if len(candidates) > 10:
-            print(f"... 他 {len(candidates) - 10} 個")
+            print(
+                f"... 他 {len(candidates) - 10} 個"
+            )
 
 
 # 結果表示関数
 def print_result(best_path):
-    for i, music_state in enumerate(best_path):
-        if music_state.is_single():
-            print(f"{i + 1}音目：単音")
-            print("  " + state_to_text(music_state.states[0]))
+    event_names = {
+        1: "単音",
+        2: "二重音",
+        3: "三重音",
+        4: "四重音",
+    }
 
-        elif music_state.is_double():
-            low_state, high_state = music_state.states
-            print(f"{i + 1}音目：二重音")
-            print("  低音：" + state_to_text(low_state))
-            print("  高音：" + state_to_text(high_state))
+    for i, music_state in enumerate(
+        best_path,
+        start=1
+    ):
+        states = music_state.states
+        state_count = len(states)
+        event_name = event_names[state_count]
+
+        print(f"{i}音目：{event_name}")
+
+        for state_index, state in enumerate(
+            states,
+            start=1
+        ):
+            if state_count == 1:
+                label = "単音"
+
+            elif state_index == 1:
+                label = "最低音"
+
+            elif state_index == state_count:
+                label = "最高音"
+
+            else:
+                label = f"中間音{state_index - 1}"
+
+            print(
+                f"  {label}："
+                + state_to_text(state)
+            )
 
 
 def input_mode_and_L():
@@ -626,61 +707,96 @@ def clear_old_fingering_marks(score):
             ]
 
 
-def annotate_score_with_fingering(score, best_path, mode_name):
-    notes_in_score = list(score.recurse().notes)
+def annotate_score_with_fingering(
+        score,
+        best_path,
+        mode_name
+):
+    notes_in_score = list(
+        score.recurse().notes
+    )
 
     if len(notes_in_score) != len(best_path):
         raise ValueError(
-            f"楽譜中の音数({len(notes_in_score)})と推定結果({len(best_path)})が一致しません"
+            f"楽譜中の音数({len(notes_in_score)})と"
+            f"推定結果({len(best_path)})が一致しません"
         )
 
     clear_old_fingering_marks(score)
 
-    for element, music_state in zip(notes_in_score, best_path):
+    for element, music_state in zip(
+        notes_in_score,
+        best_path
+    ):
+        states = music_state.states
+        state_count = len(states)
 
         # =========================
         # 単音の場合
         # =========================
-        if music_state.is_single():
-            state = music_state.states[0]
+        if state_count == 1:
+            state = states[0]
 
             element.articulations.append(
-                articulations.Fingering(str(state.fn))
+                articulations.Fingering(
+                    str(state.fn)
+                )
             )
 
-            text = expressions.TextExpression(f"String:{Strings[state.sp][0]}")
+            text = expressions.TextExpression(
+                f"String:{Strings[state.sp][0]}"
+            )
             text.placement = "below"
             element.expressions.append(text)
 
         # =========================
-        # 二重音の場合
+        # 2～4重音の場合
         # =========================
-        elif music_state.is_double():
-            low_state, high_state = music_state.states
+        elif 2 <= state_count <= 4:
+            # statesは低音から高音の順で入っている。
+            # 楽譜上では高音から低音の順に表示する。
+            fingering_text = "\n".join(
+                str(state.fn)
+                for state in reversed(states)
+            )
 
-            # 表示は上の音から下の音へ
-            # 例：低音1指・高音3指 → 3 / 1
-            fingering_text = f"{high_state.fn}\n{low_state.fn}"
-
-            fingering = articulations.Fingering(fingering_text)
+            fingering = articulations.Fingering(
+                fingering_text
+            )
             fingering.placement = "above"
             element.articulations.append(fingering)
 
+            # 使用弦は低音側から表示する
+            # 例：String:G-D-A
+            string_names = [
+                Strings[state.sp][0]
+                for state in states
+            ]
+
             string_text = (
-                f"String:{Strings[low_state.sp][0]}-{Strings[high_state.sp][0]}"
+                "String:"
+                + "-".join(string_names)
             )
-            text = expressions.TextExpression(string_text)
+
+            text = expressions.TextExpression(
+                string_text
+            )
             text.placement = "below"
             element.expressions.append(text)
 
         else:
-            raise ValueError("単音と二重音のみ対応しています。")
+            raise ValueError(
+                "1音から4音までに対応しています。"
+            )
 
     if score.metadata is None:
         from music21 import metadata
         score.metadata = metadata.Metadata()
 
-    score.metadata.title = f"Fingering Result - {mode_name}"
+    score.metadata.title = (
+        f"Fingering Result - {mode_name}"
+    )
+
     return score
 
 
