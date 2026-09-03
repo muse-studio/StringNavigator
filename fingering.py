@@ -543,6 +543,72 @@ def load_musicxml(path):
 
     return score, events, note_lengths
 
+
+def build_timeline_events(score):
+    """
+    楽譜を時間区間に分割し、
+    各区間で実際に鳴っている音高を取得する。
+    """
+
+    elements = list(score.flatten().notes)
+
+    note_infos = []
+
+    # 各音の開始時刻・終了時刻・pitchを保存
+    for element in elements:
+        start = float(element.offset)
+        end = start + float(element.quarterLength)
+
+        if isinstance(element, note.Note):
+            pitches = [element.pitch.midi]
+
+        elif isinstance(element, chord.Chord):
+            pitches = [p.midi for p in element.pitches]
+
+        else:
+            continue
+
+        note_infos.append({
+            "start": start,
+            "end": end,
+            "pitches": pitches
+        })
+
+    # 音の開始・終了時刻をすべて集める
+    time_points = set()
+
+    for info in note_infos:
+        time_points.add(info["start"])
+        time_points.add(info["end"])
+
+    time_points = sorted(time_points)
+
+    timeline_events = []
+
+    # 隣り合う時刻の間で鳴っている音を調べる
+    for i in range(len(time_points) - 1):
+        start = time_points[i]
+        end = time_points[i + 1]
+
+        active_pitches = []
+
+        for info in note_infos:
+            if info["start"] <= start < info["end"]:
+                active_pitches.extend(info["pitches"])
+
+        if active_pitches:
+            active_pitches.sort()
+
+            timeline_events.append({
+                "start": start,
+                "end": end,
+                "pitches": active_pitches
+            })
+
+    return timeline_events
+
+
+
 def state_to_text(state):
     string_name = Strings[state.sp][0]
     return f"{string_name}線, {state.fn}指, HP={state.hp}, FI={state.fi}"
@@ -840,10 +906,26 @@ if __name__ == "__main__":
     # load_musicxml は score, pitches, note_lengths の3つを返す
     score, events, note_lengths = load_musicxml(xml_path)
 
+    timeline_events = build_timeline_events(score)
+
+    print("\n=== 2音以上が同時に鳴っている区間 ===")
+
+    for event in timeline_events:
+        if len(event["pitches"]) >= 2:
+            print(
+                f'{event["start"]} -> {event["end"]}',
+                f'pitches={event["pitches"]}'
+            )
+
+    print("=== 確認終了 ===\n")
+
+    exit()
+
+
     print("events:", events)
     print("note_lengths:", note_lengths)
 
-    print_music_state_candidates(events)
+    #print_music_state_candidates(events)
 
     # 候補確認後、そのままDPとPDF出力まで実行する
 

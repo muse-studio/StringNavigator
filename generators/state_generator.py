@@ -306,6 +306,9 @@ if __name__ == "__main__":
         [62, 69],
         [55, 62, 69],
         [55, 62, 69, 76],
+
+        # 2声で同じ音が同時に鳴るケース
+        [69, 69],
     ]
 
     for event in test_events:
@@ -316,5 +319,7 @@ if __name__ == "__main__":
         print(f"候補数={len(candidates)}")
 
         if candidates:
-            print("最初の候補:")
-            print(candidates[0])
+            print("候補を最大10個表示:")
+
+            for candidate in candidates[:10]:
+                print(candidate)
