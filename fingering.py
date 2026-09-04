@@ -11,6 +11,7 @@ from music21 import (
     converter,
     expressions,
     note,
+    stream,
     tempo,
 )
 
@@ -298,55 +299,118 @@ def C_FI_press(fi_i):
 
 
 # 式(12)
-def detect_segment_boundaries(
-        score,
+
+
+def is_same_held_state(prev_state, curr_state):
+    """
+    継続中の同じ音符について、
+    前後で同じ押さえ方になっているか確認する。
+    """
+
+    # 開放弦の場合
+    # FIは実際の押弦には関係しないので、
+    # 同じ弦の開放弦なら同じ状態として扱う
+    if prev_state.fn == 0 and curr_state.fn == 0:
+        return prev_state.sp == curr_state.sp
+
+    if(
+        prev_state.sp != curr_state.sp
+        or prev_state.fn != curr_state.fn
+        or prev_state.hp != curr_state.hp
+    ):
+        return False
+
+    if prev_state.fn == 1:
+        return True
+
+    if prev_state.fn == 2:
+        return(
+            prev_state.fi[0]
+            == curr_state.fi[0]
+        )
+
+    if prev_state.fn == 3:
+        return(
+            prev_state.fi[:2]
+            == curr_state.fi[:2]
+        )
+
+    if prev_state.fn == 4:
+        return(
+            prev_state.fi
+            == curr_state.fi
+        )
+
+    return False
+
+    # 押弦の場合はState全体が同じであることを要求
+#    return prev_state == curr_state
+
+
+
+
+def sustained_notes_are_valid(
+        prev_music_state,
+        curr_music_state,
+        prev_timeline_event,
+        curr_timeline_event):
+
+    """
+    前後のtimeline eventに同じsource_idがある場合、
+    その音のStateが維持されているか確認する。
+    """
+
+    prev_states = {
+        item["source_id"]: state
+        for item, state in zip(
+            prev_timeline_event["items"],
+            prev_music_state.states
+        )
+    }
+
+    curr_states = {
+        item["source_id"]: state
+        for item, state in zip(
+            curr_timeline_event["items"],
+            curr_music_state.states
+        )
+    }
+
+    common_source_ids = (
+        prev_states.keys()
+        & curr_states.keys()
+    )
+
+    for source_id in common_source_ids:
+
+        if not is_same_held_state(
+            prev_states[source_id],
+            curr_states[source_id]
+        ):
+            return False
+
+    return True
+
+
+
+def estimate_fingering(
+        events,
         note_lengths,
-        long_note_threshold=2.0):
+        L,
+        timeline_events=None):
 
-    boundaries = set()
-
-    note_index = 0
-
-    # --------------------
-    # 二重線で区切る
-    # --------------------
-    for measure in score.parts[0].getElementsByClass("Measure"):
-
-        notes_in_measure = list(measure.recurse().notes)
-        note_index += len(notes_in_measure)
-
-        right_barline = measure.rightBarline
-
-        if right_barline is not None:
-
-            if right_barline.type in [
-                "double",
-                "final",
-                "light-light",
-                "light-heavy"
-            ]:
-
-                if note_index < len(note_lengths):
-                    boundaries.add(note_index)
-
-    # --------------------
-    # 長い音符で区切る
-    # --------------------
-    if long_note_threshold is not None:
-        for i, length in enumerate(note_lengths):
-
-            if length >= long_note_threshold:
-
-                if i + 1 < len(note_lengths):
-                    boundaries.add(i + 1)
-
-    return sorted(boundaries)
-
-
-
-def estimate_fingering(events, note_lengths, L):
     if len(events) != len(note_lengths):
-        raise ValueError("events と note_lengths の長さが一致していません")
+        raise ValueError(
+            "eventsとnote_lengthsの長さが一致していません"
+        )
+    
+    if (
+            timeline_events is not None
+            and len(events) != len(timeline_events)
+        ):
+            raise ValueError(
+                "events と timeline_events の長さが一致していません"
+            )
 
     # 単音・二重音・三重音・四重音を
     # MusicStateとして候補生成する
@@ -371,13 +435,15 @@ def estimate_fingering(events, note_lengths, L):
     e0 = expression_degree(note_lengths[0], L)
 
     for music_state in all_music_states[0]:
-        first_dp[music_state] = music_state_pressing_cost(
-            music_state,
-            events[0],
-            e0,
-            pressing_cost,
-            C_HP_press,
-            C_FI_press
+        first_dp[music_state] = (
+            music_state_pressing_cost(
+                music_state,
+                events[0],
+                e0,
+                pressing_cost,
+                C_HP_press,
+                C_FI_press
+            )
         )
         first_back[music_state] = None
 
@@ -396,6 +462,17 @@ def estimate_fingering(events, note_lengths, L):
             best_prev = None
 
             for music_state_i in all_music_states[n - 1]:
+
+                if timeline_events is not None:
+
+                    if not sustained_notes_are_valid(
+                        music_state_i,
+                        music_state_j,
+                        timeline_events[n - 1],
+                        timeline_events[n]
+                    ):
+                        continue
+
                 cost = (
                     dp[n - 1][music_state_i]
                     + music_state_transition_cost(
@@ -420,6 +497,124 @@ def estimate_fingering(events, note_lengths, L):
             current_dp[music_state_j] = best_cost
             current_back[music_state_j] = best_prev
 
+        reachable_states = [
+            music_state
+            for music_state, cost in current_dp.items()
+            if cost < math.inf
+        ]
+
+        if not reachable_states:
+            print("\n=== DP経路なし ===")
+            print("event番号:", n)
+            print("前event:", events[n - 1])
+            print("現在event:", events[n])
+
+            if timeline_events is not None:
+                print(
+                    "前source_ids:",
+                    [
+                        item["source_id"]
+                        for item in timeline_events[n - 1]["items"]
+                    ]
+                )
+                print(
+                    "現在source_ids:",
+                    [
+                        item["source_id"]
+                        for item in timeline_events[n]["items"]
+                    ]
+                )
+
+            print("\n--- 継続音の候補確認 ---")
+
+            common_ids = (
+                {
+                    item["source_id"]
+                    for item in timeline_events[n - 1]["items"]
+                }
+                &
+                {
+                    item["source_id"]
+                    for item in timeline_events[n]["items"]
+                }
+            )
+
+            for source_id in common_ids:
+
+                prev_index = next(
+                    i
+                    for i, item in enumerate(
+                        timeline_events[n - 1]["items"]
+                    )
+                    if item["source_id"] == source_id
+                )
+
+                curr_index = next(
+                    i
+                    for i, item in enumerate(
+                        timeline_events[n]["items"]
+                    )
+                    if item["source_id"] == source_id
+                )
+
+                print(
+                    f"\nsource_id={source_id}"
+                )
+
+                print("前eventで到達可能なState:")
+
+                prev_held_states = set()
+
+                for music_state, cost in dp[n - 1].items():
+
+                    if cost < math.inf:
+                        state = music_state.states[prev_index]
+                        prev_held_states.add(state)
+
+                for state in prev_held_states:
+                    print(
+                        " ",
+                        state_to_text(state)
+                    )
+
+                print("現在eventの候補State:")
+
+                curr_held_states = set()
+
+                for music_state in all_music_states[n]:
+                    state = music_state.states[curr_index]
+                    curr_held_states.add(state)
+
+                for state in curr_held_states:
+                    print(
+                        " ",
+                        state_to_text(state)
+                    )
+
+                print("共通State:")
+
+                common_states = (
+                    prev_held_states
+                    & curr_held_states
+                )
+
+                for state in common_states:
+                    print(
+                        " ",
+                        state_to_text(state)
+                    )
+
+                print(
+                    "共通State数:",
+                    len(common_states)
+                )
+
+
+            raise RuntimeError(
+                f"event {n} に到達できるMusicStateがありません"
+            )
+
+
         dp.append(current_dp)
         back.append(current_back)
 
@@ -438,12 +633,15 @@ def estimate_fingering_segmented(
         score,
         events,
         note_lengths,
+        timeline_events,
+        bpm,
         L,
         long_note_threshold=2.0):
 
-    boundaries = detect_segment_boundaries(
+    boundaries = detect_timeline_segment_boundaries(
         score,
-        note_lengths,
+        timeline_events,
+        bpm,
         long_note_threshold
     )
 
@@ -469,10 +667,12 @@ def estimate_fingering_segmented(
             end="",
             flush=True
         )
+
         segment_path = estimate_fingering(
             events[s:e],
             note_lengths[s:e],
-            L
+            L,
+            timeline_events[s:e]
         )
 
         best_path.extend(segment_path)
@@ -541,7 +741,7 @@ def load_musicxml(path):
 
     print("BPM:", bpm)
 
-    return score, events, note_lengths
+    return score, events, note_lengths, bpm
 
 
 def build_timeline_events(score):
@@ -555,24 +755,41 @@ def build_timeline_events(score):
     note_infos = []
 
     # 各音の開始時刻・終了時刻・pitchを保存
+    source_id = 0
+
     for element in elements:
         start = float(element.offset)
         end = start + float(element.quarterLength)
 
+        # 単音
         if isinstance(element, note.Note):
-            pitches = [element.pitch.midi]
 
+            note_infos.append({
+                "source_id": source_id,
+                "start": start,
+                "end": end,
+                "pitch": element.pitch.midi,
+                "element": element,
+                "pitch_index": 0
+            })
+
+            source_id += 1
+
+        # Chord
         elif isinstance(element, chord.Chord):
-            pitches = [p.midi for p in element.pitches]
 
-        else:
-            continue
+            for pitch_index, pitch in enumerate(element.pitches):
 
-        note_infos.append({
-            "start": start,
-            "end": end,
-            "pitches": pitches
-        })
+                note_infos.append({
+                    "source_id": source_id,
+                    "start": start,
+                    "end": end,
+                    "pitch": pitch.midi,
+                    "element": element,
+                    "pitch_index": pitch_index
+                })
+
+                source_id += 1
 
     # 音の開始・終了時刻をすべて集める
     time_points = set()
@@ -590,28 +807,265 @@ def build_timeline_events(score):
         start = time_points[i]
         end = time_points[i + 1]
 
-        active_pitches = []
+        active_items = []
 
         for info in note_infos:
             if info["start"] <= start < info["end"]:
-                active_pitches.extend(info["pitches"])
 
-        if active_pitches:
-            active_pitches.sort()
+                active_items.append({
+                    "source_id": info["source_id"],
+                    "start": info["start"],
+                    "end": info["end"],
+                    "pitch": info["pitch"],
+                    "element": info["element"],
+                    "pitch_index": info["pitch_index"]
+                })
+
+        if active_items:
+
+            # pitchの低い順に並べる
+            active_items.sort(
+                key=lambda item: item["pitch"]
+            )
+
+            active_pitches = [
+                item["pitch"]
+                for item in active_items
+            ]
 
             timeline_events.append({
                 "start": start,
                 "end": end,
-                "pitches": active_pitches
+                "pitches": active_pitches,
+                "items": active_items
             })
 
     return timeline_events
+
+def get_double_barline_offsets(score):
+    """
+    二重線・終止線がある位置を
+    楽譜全体のoffsetとして取得する。
+    """
+
+    offsets = []
+
+    for measure in score.parts[0].getElementsByClass("Measure"):
+
+        right_barline = measure.rightBarline
+
+        if right_barline is None:
+            continue
+
+        if right_barline.type in [
+            "double",
+            "final",
+            "light-light",
+            "light-heavy"
+        ]:
+            # 小節の開始位置 + 小節の長さ
+            barline_offset = (
+                float(measure.offset)
+                + float(measure.barDuration.quarterLength)
+            )
+
+            offsets.append(barline_offset)
+
+    return offsets
+
+def get_timeline_barline_boundaries(
+        timeline_events,
+        double_barline_offsets):
+    """
+    二重線のoffsetを、
+    timeline eventの区切り位置に変換する。
+    """
+
+    boundaries = []
+
+    for offset in double_barline_offsets:
+
+        for i, event in enumerate(timeline_events):
+
+            if event["end"] == offset:
+
+                boundary = i + 1
+
+                # 最後のeventの後は区切る必要がない
+                if boundary < len(timeline_events):
+                    boundaries.append(boundary)
+
+                break
+
+    return boundaries
+
+def get_timeline_long_note_boundaries(
+        timeline_events,
+        bpm,
+        long_note_threshold):
+
+    """
+    元の音符の長さを使って、
+    長い音符が終わる位置をtimeline境界に変換する。
+    """
+
+    boundaries = []
+
+    if long_note_threshold is None:
+        return boundaries
+
+    seconds_per_quarter = 60 / bpm
+
+    # source_idごとに1回だけ確認する
+    source_items = {}
+
+    for event in timeline_events:
+        for item in event["items"]:
+            source_items[item["source_id"]] = item
+
+    # 長い音符の終了位置を集める
+    long_note_end_offsets = set()
+
+    for item in source_items.values():
+
+        quarter_length = (
+            item["end"] - item["start"]
+        )
+
+        length_seconds = (
+            quarter_length
+            * seconds_per_quarter
+        )
+
+        if length_seconds >= long_note_threshold:
+            long_note_end_offsets.add(
+                item["end"]
+            )
+
+    # 音符の終了位置を
+    # timeline eventの境界番号に変換する
+    for end_offset in sorted(long_note_end_offsets):
+
+        for i, event in enumerate(timeline_events):
+
+            if event["end"] == end_offset:
+
+                boundary = i + 1
+
+                if boundary < len(timeline_events):
+                    boundaries.append(boundary)
+
+                break
+
+    return sorted(set(boundaries))
+
+
+
+def detect_timeline_segment_boundaries(
+        score,
+        timeline_events,
+        bpm,
+        long_note_threshold=2.0):
+
+    double_barline_offsets = get_double_barline_offsets(score)
+
+    barline_boundaries = get_timeline_barline_boundaries(
+        timeline_events,
+        double_barline_offsets
+    )
+
+    long_note_boundaries = get_timeline_long_note_boundaries(
+        timeline_events,
+        bpm,
+        long_note_threshold
+    )
+
+    boundaries = sorted(
+        set(barline_boundaries + long_note_boundaries)
+    )
+
+    return boundaries
+
+
+
+
+def timeline_to_events(timeline_events, bpm):
+    """
+    timeline_events を
+    DPで使用する events と note_lengths に変換する。
+    """
+
+    seconds_per_quarter = 60 / bpm
+
+    events = []
+    note_lengths = []
+
+    for timeline_event in timeline_events:
+        pitches = timeline_event["pitches"]
+
+        start = timeline_event["start"]
+        end = timeline_event["end"]
+
+        quarter_length = end - start
+        length_seconds = quarter_length * seconds_per_quarter
+
+        events.append(pitches)
+        note_lengths.append(length_seconds)
+
+    return events, note_lengths
 
 
 
 def state_to_text(state):
     string_name = Strings[state.sp][0]
     return f"{string_name}線, {state.fn}指, HP={state.hp}, FI={state.fi}"
+
+def build_source_state_map(
+        timeline_events,
+        best_path):
+
+    """
+    source_idごとに、
+    その音が最初に現れたtimeline eventでの
+    Stateを保存する。
+    """
+
+    source_state_map = {}
+
+    for timeline_event, music_state in zip(
+            timeline_events,
+            best_path):
+
+        for item, state in zip(
+                timeline_event["items"],
+                music_state.states):
+
+            source_id = item["source_id"]
+
+            # 同じsource_idが複数のtimeline eventに
+            # 現れても、最初のStateだけ保存する
+            if source_id not in source_state_map:
+                source_state_map[source_id] = state
+
+    return source_state_map
+
+def build_source_item_map(timeline_events):
+    """
+    source_idごとに元の音符情報を保存する。
+    """
+
+    source_item_map = {}
+
+    for timeline_event in timeline_events:
+
+        for item in timeline_event["items"]:
+
+            source_id = item["source_id"]
+
+            if source_id not in source_item_map:
+                source_item_map[source_id] = item
+
+    return source_item_map
 
 
 def print_music_state_candidates(events):
@@ -773,6 +1227,149 @@ def clear_old_fingering_marks(score):
             ]
 
 
+def annotate_score_with_source_states(
+        score,
+        timeline_events,
+        source_state_map):
+
+    """
+    source_idを使って、
+    元のNote・Chordに運指を書き込む。
+    """
+
+    source_item_map = build_source_item_map(
+        timeline_events
+    )
+
+    # 以前の運指表示を削除
+    clear_old_fingering_marks(score)
+
+    # =========================
+    # 通常のNote
+    # =========================
+    for source_id, item in source_item_map.items():
+
+        element = item["element"]
+
+        if not isinstance(element, note.Note):
+            continue
+
+        state = source_state_map[source_id]
+
+        # 指番号
+        fingering = articulations.Fingering(
+            str(state.fn)
+        )
+        voice = element.getContextByClass(stream.Voice)
+
+        # このsource_idが現れるtimeline eventを探す
+        is_polyphonic = False
+
+        for timeline_event in timeline_events:
+            source_ids = [
+                event_item["source_id"]
+                for event_item in timeline_event["items"]
+            ]
+
+            if source_id in source_ids:
+                # 同時に2音以上鳴っている場合だけ二声部分として扱う
+                if len(timeline_event["items"]) >= 2:
+                    is_polyphonic = True
+                break
+
+        # 二声部分のVoice 2だけ下に表示
+        if (
+            is_polyphonic
+            and voice is not None
+            and str(voice.id) == "2"
+        ):
+            fingering.placement = "below"
+        else:
+            fingering.placement = "above"
+
+        element.articulations.append(fingering)
+
+        # 弦名
+        text = expressions.TextExpression(
+            f"String:{Strings[state.sp][0]}"
+        )
+        text.placement = "below"
+        element.expressions.append(text)
+
+    # =========================
+    # Chord
+    # =========================
+    chord_groups = {}
+
+    for source_id, item in source_item_map.items():
+
+        element = item["element"]
+
+        if not isinstance(element, chord.Chord):
+            continue
+
+        key = id(element)
+
+        if key not in chord_groups:
+            chord_groups[key] = {
+                "element": element,
+                "states": []
+            }
+
+        chord_groups[key]["states"].append(
+            (
+                item["pitch_index"],
+                source_state_map[source_id]
+            )
+        )
+
+    # Chordごとにまとめて書き込む
+    for chord_data in chord_groups.values():
+
+        element = chord_data["element"]
+
+        # Chord内の低音→高音の順
+        indexed_states = sorted(
+            chord_data["states"],
+            key=lambda x: x[0]
+        )
+
+        states = [
+            state
+            for pitch_index, state in indexed_states
+        ]
+
+        # 指番号は楽譜上で高音→低音の順に表示
+        fingering_text = "\n".join(
+            str(state.fn)
+            for state in reversed(states)
+        )
+
+        fingering = articulations.Fingering(
+            fingering_text
+        )
+        fingering.placement = "above"
+        element.articulations.append(fingering)
+
+        # 使用弦は低音→高音
+        string_names = [
+            Strings[state.sp][0]
+            for state in states
+        ]
+
+        text = expressions.TextExpression(
+            "String:" + "-".join(string_names)
+        )
+        text.placement = "below"
+        element.expressions.append(text)
+
+    print(
+        f"Note書き込み完了"
+    )
+    print(
+        f"Chord書き込み数: {len(chord_groups)}"
+    )
+
 def annotate_score_with_fingering(
         score,
         best_path,
@@ -897,64 +1494,81 @@ def print_cache_info():
 # 実行部分
 if __name__ == "__main__":
 
+    # MusicXMLを選択
     xml_path = select_musicxml_file_dialog()
 
     print("\n選択されたMusicXMLファイル：")
     print(xml_path)
 
+    # MusicXML読み込み
+    score, _, _, bpm = load_musicxml(xml_path)
 
-    # load_musicxml は score, pitches, note_lengths の3つを返す
-    score, events, note_lengths = load_musicxml(xml_path)
-
+    # 二声を含め、時間軸に沿ったeventを作成
     timeline_events = build_timeline_events(score)
 
-    print("\n=== 2音以上が同時に鳴っている区間 ===")
+    events, note_lengths = timeline_to_events(
+        timeline_events,
+        bpm
+    )
 
-    for event in timeline_events:
-        if len(event["pitches"]) >= 2:
-            print(
-                f'{event["start"]} -> {event["end"]}',
-                f'pitches={event["pitches"]}'
-            )
-
-    print("=== 確認終了 ===\n")
-
-    exit()
-
-
-    print("events:", events)
-    print("note_lengths:", note_lengths)
-
-    #print_music_state_candidates(events)
-
-    # 候補確認後、そのままDPとPDF出力まで実行する
-
+    # パラメータ設定
     input_parameters()
 
-    # Beginner / Intermediate のどちらを楽譜に書き込むか選ぶ
+    # Beginner / Intermediate
     mode_name, L = input_mode_and_L()
 
     print(f"\n{mode_name}")
+
+    # 長い音符で区切るか設定
     long_note_threshold = input_long_note_threshold()
-    best_path = estimate_fingering_segmented(score, events, note_lengths, L, long_note_threshold=long_note_threshold)
-    print_result(best_path)
 
-    # 楽譜に運指を書き込んで出力
-    annotated_score = annotate_score_with_fingering(score, best_path, mode_name)
+    # DP実行
+    best_path = estimate_fingering_segmented(
+        score,
+        events,
+        note_lengths,
+        timeline_events,
+        bpm,
+        L,
+        long_note_threshold=long_note_threshold
+    )
 
+    # timeline上の結果を
+    # 元の音符のsource_idに対応させる
+    source_state_map = build_source_state_map(
+        timeline_events,
+        best_path
+    )
+
+    # 楽譜へ運指を書き込む
+    annotate_score_with_source_states(
+        score,
+        timeline_events,
+        source_state_map
+    )
+
+    # 保存先を選択
     output_dir = select_output_folder_dialog()
 
     print("\nPDF保存先フォルダ：")
     print(output_dir)
 
-    output_name = input("\n出力ファイル名（拡張子なし、未入力なら fingering_result）:").strip()
+    output_name = input(
+        "\n出力ファイル名（拡張子なし、未入力なら fingering_result）:"
+    ).strip()
+
     if output_name == "":
         output_name = "fingering_result"
 
-    output_base = str(output_dir / output_name)
+    output_base = str(
+        output_dir / output_name
+    )
 
-    write_annotated_outputs(annotated_score, output_base)
+    # MusicXML / PDF出力
+    write_annotated_outputs(
+        score,
+        output_base
+    )
 
-    # メモ化が効いているか確認
+    # キャッシュ情報
     print_cache_info()
-

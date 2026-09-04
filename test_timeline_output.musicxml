@@ -8,7 +8,7 @@
   <identification>
     <creator type="composer">ゲオルク・フリードリヒ・ヘンデル</creator>
     <encoding>
-      <encoding-date>2026-09-04</encoding-date>
+      <encoding-date>2026-09-03</encoding-date>
       <software>music21 v.9.9.1</software>
       <software>MuseScore Studio 4.7.2</software>
       <supports attribute="new-system" element="print" type="yes" value="yes" />
@@ -76,11 +76,11 @@
     <score-part id="P1">
       <part-name print-object="no">Piano</part-name>
       <part-abbreviation print-object="no">Pno.</part-abbreviation>
-      <score-instrument id="I22e7ac39ff07d94e57e19cbb3490bdb4">
+      <score-instrument id="Ia7f3a18b770b0e3cbd7e9cc7a46a964c">
         <instrument-name>Piano</instrument-name>
         <instrument-abbreviation>Pno</instrument-abbreviation>
       </score-instrument>
-      <midi-instrument id="I22e7ac39ff07d94e57e19cbb3490bdb4">
+      <midi-instrument id="Ia7f3a18b770b0e3cbd7e9cc7a46a964c">
         <midi-channel>1</midi-channel>
         <midi-program>1</midi-program>
       </midi-instrument>
@@ -772,7 +772,7 @@
           <tied type="start" />
           <slur bezier-x="-21.334016" bezier-y="-17.884604" number="1" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1098,7 +1098,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1117,7 +1117,7 @@
           <other-ornament />
           <slur bezier-x="-2.846421" bezier-y="-9.342829" number="4" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1135,7 +1135,7 @@
           <other-ornament />
           <slur number="4" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1151,7 +1151,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1167,7 +1167,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1184,7 +1184,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1202,7 +1202,7 @@
           <other-ornament />
           <slur bezier-x="-4.994209" bezier-y="7.911385" number="5" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1220,7 +1220,7 @@
           <other-ornament />
           <slur number="5" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1238,7 +1238,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1255,7 +1255,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1272,7 +1272,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1289,7 +1289,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1310,7 +1310,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1327,7 +1327,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1344,7 +1344,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1361,7 +1361,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1379,7 +1379,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1396,7 +1396,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1413,7 +1413,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1430,7 +1430,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1446,7 +1446,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1462,7 +1462,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1479,7 +1479,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1497,7 +1497,7 @@
           <other-ornament />
           <slur bezier-x="-2.846421" bezier-y="9.342829" number="6" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1515,7 +1515,7 @@
           <other-ornament />
           <slur number="6" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1543,7 +1543,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1562,7 +1562,7 @@
           <other-ornament />
           <slur bezier-x="-7.715235" bezier-y="4.581603" number="1" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1580,7 +1580,7 @@
           <other-ornament />
           <slur number="1" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1596,7 +1596,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1615,7 +1615,7 @@
           <other-ornament />
           <slur bezier-x="-5.646542" bezier-y="5.845769" number="2" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1634,7 +1634,7 @@
           <other-ornament />
           <slur number="2" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1650,7 +1650,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1668,7 +1668,7 @@
           <other-ornament />
           <slur bezier-x="-7.245477" bezier-y="6.141399" number="3" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -1687,7 +1687,7 @@
           <other-ornament />
           <slur number="3" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1703,7 +1703,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -1719,7 +1719,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -1739,7 +1739,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1756,7 +1756,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -1773,7 +1773,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1790,7 +1790,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -1807,7 +1807,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1825,7 +1825,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1842,7 +1842,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -1860,7 +1860,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1877,7 +1877,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1895,7 +1895,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1912,7 +1912,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1930,7 +1930,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1947,7 +1947,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -1964,7 +1964,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1981,7 +1981,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -1998,7 +1998,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -2019,7 +2019,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -2036,7 +2036,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -2054,7 +2054,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -2071,7 +2071,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -2089,7 +2089,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -2106,7 +2106,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -2124,7 +2124,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -2141,7 +2141,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -2159,7 +2159,7 @@
           <other-ornament />
           <slur bezier-x="-12.373914" bezier-y="-1.254934" number="4" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -2177,7 +2177,7 @@
           <other-ornament />
           <slur number="4" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -2195,7 +2195,7 @@
           <other-ornament />
           <slur bezier-x="-3.896499" bezier-y="8.662044" number="5" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -2213,7 +2213,7 @@
           <other-ornament />
           <slur number="5" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -2232,7 +2232,7 @@
           <other-ornament />
           <slur bezier-x="-2.05935" bezier-y="7.862285" number="6" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -2251,7 +2251,7 @@
           <other-ornament />
           <slur number="6" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -2270,7 +2270,7 @@
           <other-ornament />
           <slur bezier-x="-1.383284" bezier-y="9.079864" number="1" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -2288,7 +2288,7 @@
           <other-ornament />
           <slur number="1" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3117,7 +3117,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -3135,7 +3135,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -3151,7 +3151,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -3400,7 +3400,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3418,7 +3418,7 @@
           <other-ornament />
           <slur bezier-x="-13.385987" bezier-y="-10.735575" number="4" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -3456,7 +3456,7 @@
           <other-ornament />
           <slur bezier-x="0" bezier-y="13.626341" number="5" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3474,7 +3474,7 @@
           <other-ornament />
           <slur number="5" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3493,7 +3493,7 @@
           <other-ornament />
           <slur bezier-x="0" bezier-y="12.64932" number="6" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -3511,7 +3511,7 @@
           <other-ornament />
           <slur number="6" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3530,7 +3530,7 @@
           <other-ornament />
           <slur bezier-x="0" bezier-y="11.711478" number="1" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -3548,7 +3548,7 @@
           <other-ornament />
           <slur number="1" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3566,7 +3566,7 @@
           <other-ornament />
           <slur bezier-x="0" bezier-y="10.81275" number="2" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3584,7 +3584,7 @@
           <other-ornament />
           <slur number="2" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3602,7 +3602,7 @@
           <other-ornament />
           <slur bezier-x="0" bezier-y="10.514613" number="3" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3620,7 +3620,7 @@
           <other-ornament />
           <slur number="3" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3639,7 +3639,7 @@
           <other-ornament />
           <slur bezier-x="-1.355002" bezier-y="9.06156" number="4" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -3657,7 +3657,7 @@
           <other-ornament />
           <slur number="4" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3675,7 +3675,7 @@
           <other-ornament />
           <slur bezier-x="-4.455471" bezier-y="-6.595845" number="5" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -3693,7 +3693,7 @@
           <other-ornament />
           <slur number="5" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3711,7 +3711,7 @@
           <other-ornament />
           <slur bezier-x="-3.835275" bezier-y="-6.95247" number="6" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3729,7 +3729,7 @@
           <other-ornament />
           <slur number="6" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -3759,7 +3759,7 @@
           <other-ornament />
           <slur bezier-x="-13.911679" bezier-y="-1.230598" number="1" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -3777,7 +3777,7 @@
           <other-ornament />
           <slur number="1" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3796,7 +3796,7 @@
           <other-ornament />
           <slur bezier-x="-2.680567" bezier-y="10.494142" number="2" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -3814,7 +3814,7 @@
           <other-ornament />
           <slur number="2" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3832,7 +3832,7 @@
           <other-ornament />
           <slur bezier-x="-13.911679" bezier-y="-1.230598" number="3" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -3850,7 +3850,7 @@
           <other-ornament />
           <slur number="3" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3868,7 +3868,7 @@
           <other-ornament />
           <slur bezier-x="-0.215894" bezier-y="12.351417" number="4" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -3886,7 +3886,7 @@
           <other-ornament />
           <slur number="4" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3904,7 +3904,7 @@
           <other-ornament />
           <slur bezier-x="-13.911679" bezier-y="-1.230598" number="5" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -3922,7 +3922,7 @@
           <other-ornament />
           <slur number="5" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3941,7 +3941,7 @@
           <other-ornament />
           <slur bezier-x="-2.680567" bezier-y="10.494142" number="6" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -3959,7 +3959,7 @@
           <other-ornament />
           <slur number="6" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -3977,7 +3977,7 @@
           <other-ornament />
           <slur bezier-x="-13.911679" bezier-y="-1.230598" number="1" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -3995,7 +3995,7 @@
           <other-ornament />
           <slur number="1" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -4013,7 +4013,7 @@
           <other-ornament />
           <slur bezier-x="-0.215894" bezier-y="12.351417" number="2" type="start" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">4</fingering>
+            <fingering alternate="no" placement="below" substitution="no">4</fingering>
           </technical>
         </notations>
       </note>
@@ -4031,7 +4031,7 @@
           <other-ornament />
           <slur number="2" type="stop" />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -4051,7 +4051,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
           <ornaments>
             <trill-mark placement="above" />
@@ -4072,7 +4072,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -4090,7 +4090,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -4106,7 +4106,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -4124,7 +4124,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -4142,7 +4142,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
         </notations>
       </note>
@@ -4158,7 +4158,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -4174,7 +4174,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">3</fingering>
+            <fingering alternate="no" placement="below" substitution="no">3</fingering>
           </technical>
         </notations>
       </note>
@@ -4203,7 +4203,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">2</fingering>
+            <fingering alternate="no" placement="below" substitution="no">2</fingering>
           </technical>
         </notations>
       </note>
@@ -4220,7 +4220,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">1</fingering>
+            <fingering alternate="no" placement="below" substitution="no">1</fingering>
           </technical>
           <ornaments>
             <trill-mark placement="above" />
@@ -4240,7 +4240,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
@@ -4255,7 +4255,7 @@
         <notations>
           <other-ornament />
           <technical>
-            <fingering alternate="no" placement="above" substitution="no">0</fingering>
+            <fingering alternate="no" placement="below" substitution="no">0</fingering>
           </technical>
         </notations>
       </note>
