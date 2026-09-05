@@ -118,6 +118,11 @@ def input_parameters():
     PARAMS["k3"] = input_float_with_default("k3 式(11) FI押弦", PARAMS["k3"])
 
     # k や σ^2 を変えた後に、古いコスト計算結果が残らないようにする
+
+    C_SP_transition.cache_clear()
+    C_HP_transition.cache_clear()
+    C_FI_transition.cache_clear()
+
     transition_cost.cache_clear()
     pressing_cost.cache_clear()
 
@@ -140,6 +145,7 @@ def normal_pdf(x, mu, sigma2):
 
 
 # 式(4)
+@lru_cache(maxsize=None)
 def C_SP_transition(sp_i, sp_j):
     sigma2_1 = PARAMS["sigma2_1"]
     x = abs(sp_i - sp_j)
@@ -155,6 +161,7 @@ def C_SP_transition(sp_i, sp_j):
 
 
 # 式(5)
+@lru_cache(maxsize=None)
 def C_HP_transition(hp_i, hp_j):
     sigma2_2 = PARAMS["sigma2_2"]
     x = abs(hp_i - hp_j)
@@ -170,6 +177,7 @@ def C_HP_transition(hp_i, hp_j):
 
 
 # 式(6)
+@lru_cache(maxsize=None)
 def C_FI_transition(fi_i, fi_j):
     k1 = PARAMS["k1"]
     if fi_i == fi_j:
