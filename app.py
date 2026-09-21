@@ -1,8 +1,11 @@
 import re
 import hashlib
+import base64
 import math
 import tempfile
 import time
+from io import BytesIO
+from PIL import Image
 from music21 import converter
 
 from pathlib import Path
@@ -14,6 +17,107 @@ from fingering import (
     estimate_fingering_segmented,
     load_musicxml,
 )
+
+
+# ==========================================
+# PC側のネイティブファイル選択用
+# ==========================================
+
+LAST_DIRECTORY_FILE = (
+    Path(__file__).resolve().parent
+    / ".stringnavigator_last_musicxml_dir.txt"
+)
+
+
+class LocalSelectedFile:
+    """PCで選択したローカルファイルをUploadedFile風に扱う。"""
+
+    def __init__(self, file_path):
+        self.path = Path(file_path)
+        self.name = self.path.name
+        self._data = self.path.read_bytes()
+
+    def getvalue(self):
+        return self._data
+
+
+def get_last_pc_directory():
+    """前回PCで選択したフォルダを取得する。"""
+
+    try:
+        if LAST_DIRECTORY_FILE.exists():
+            directory = Path(
+                LAST_DIRECTORY_FILE.read_text(
+                    encoding="utf-8"
+                ).strip()
+            )
+
+            if directory.is_dir():
+                return directory
+    except Exception:
+        pass
+
+    return None
+
+
+def save_last_pc_directory(file_path):
+    """PCで最後に選択したフォルダを保存する。"""
+
+    try:
+        LAST_DIRECTORY_FILE.write_text(
+            str(Path(file_path).parent),
+            encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def open_pc_musicxml_dialog():
+    """Windows PC上で通常のファイル選択画面を開く。"""
+
+    import tkinter as tk
+    from tkinter import filedialog
+
+    root = tk.Tk()
+    root.withdraw()
+
+    try:
+        root.attributes("-topmost", True)
+    except Exception:
+        pass
+
+    dialog_options = {
+        "title": "MusicXMLファイルを選択",
+        "filetypes": [
+            (
+                "MusicXMLファイル",
+                "*.musicxml *.xml *.mxl"
+            ),
+            ("すべてのファイル", "*.*"),
+        ],
+    }
+
+    last_directory = get_last_pc_directory()
+
+    if last_directory is not None:
+        dialog_options["initialdir"] = str(
+            last_directory
+        )
+
+    try:
+        selected_path = filedialog.askopenfilename(
+            **dialog_options
+        )
+    finally:
+        root.destroy()
+
+    if not selected_path:
+        return None
+
+    selected_path = Path(selected_path)
+    save_last_pc_directory(selected_path)
+
+    return selected_path
 
 
 @st.cache_data(
@@ -108,11 +212,59 @@ def create_score_preview(
                 "楽譜画像を作成できませんでした。"
             )
 
-        return [
-            image_path.read_bytes()
-            for image_path in image_paths
-        ]
+        # ==========================================
+        # iPad用にプレビュー画像を軽量化
+        # ==========================================
 
+        preview_images = []
+
+
+        for image_path in image_paths:
+
+            with Image.open(image_path) as image:
+
+                image.thumbnail(
+                    (1200, 1700),
+                    Image.Resampling.LANCZOS
+                )
+
+                if image.mode != "RGB":
+
+                    background = Image.new(
+                        "RGB",
+                        image.size,
+                        "white"
+                    )
+
+                    if "A" in image.getbands():
+
+                        background.paste(
+                            image,
+                            mask=image.getchannel("A")
+                        )
+
+                    else:
+
+                        background.paste(image)
+
+                    image = background
+
+
+                image_buffer = BytesIO()
+
+                image.save(
+                    image_buffer,
+                    format="JPEG",
+                    quality=85,
+                    optimize=True
+                )
+
+                preview_images.append(
+                    image_buffer.getvalue()
+                )
+
+
+        return preview_images
 
 # ==========================================
 # ページの基本設定
@@ -206,66 +358,210 @@ with left_column:
         "ヴァイオリン譜に対応しています。"
     )
 
-    uploaded_file = st.file_uploader(
-        "MusicXMLファイルを選択してください",
-        type=["musicxml", "xml", "mxl"]
+    # ==========================================
+    # PC・iPadでファイル選択方法を切り替える
+    # ==========================================
+
+    device_mode = st.radio(
+        "利用する端末",
+        options=["PC", "タブレット（iPad）"],
+        horizontal=True,
+        key="device_mode",
+        help=(
+            "PCではWindowsのファイル選択画面を使い、"
+            "タブレットではブラウザからアップロードします。"
+        )
     )
 
+    uploaded_file = None
+    allowed_suffixes = [
+        ".musicxml",
+        ".xml",
+        ".mxl"
+    ]
 
-    if uploaded_file is not None:
-        st.success(
-            f"「{uploaded_file.name}」を選択しました。"
+
+    # ------------------------------------------
+    # PC：Windowsの通常のファイル選択画面
+    # ------------------------------------------
+
+    if device_mode == "PC":
+
+        st.caption(
+            "PC内の好きな場所からMusicXMLを選択できます。"
+            "前回選択したフォルダを次回も最初に開きます。"
         )
 
-
-        input_file_data = (
-            uploaded_file.getvalue()
-        )
-
-        input_file_id = hashlib.sha256(
-            input_file_data
-        ).hexdigest()
-
-
-        # 別の楽譜を選択した場合
-        if (
-            st.session_state.get(
-                "input_file_id"
-            )
-            != input_file_id
+        if st.button(
+            "PCからMusicXMLファイルを選択",
+            use_container_width=True,
+            key="pc_file_select_button"
         ):
 
-            st.session_state[
-                "input_file_id"
-            ] = input_file_id
+            try:
+                selected_path = (
+                    open_pc_musicxml_dialog()
+                )
 
-         
-            result_keys = [
-                "result_musicxml",
-                "result_download_name",
-                "result_event_count",
-                "result_path_count",
-                "result_load_seconds",
-                "result_estimate_seconds",
-                "result_output_seconds",
-                "result_total_seconds",
-                "result_level",
-            ]
+                if selected_path is not None:
+                    st.session_state[
+                        "pc_selected_musicxml_path"
+                    ] = str(selected_path)
 
-            for key in result_keys:
+            except Exception as error:
+                st.error(
+                    "PCのファイル選択画面を"
+                    "開けませんでした。"
+                )
+
+                with st.expander(
+                    "ファイル選択エラーの詳細"
+                ):
+                    st.exception(error)
+
+        saved_pc_path = st.session_state.get(
+            "pc_selected_musicxml_path"
+        )
+
+        if saved_pc_path:
+            saved_pc_path = Path(saved_pc_path)
+
+            if saved_pc_path.exists():
+
+                file_suffix = (
+                    saved_pc_path.suffix.lower()
+                )
+
+                if file_suffix in allowed_suffixes:
+                    uploaded_file = LocalSelectedFile(
+                        saved_pc_path
+                    )
+
+                else:
+                    st.error(
+                        "MusicXML形式のファイルを"
+                        "選択してください。"
+                    )
+
+                    st.caption(
+                        "対応形式：.musicxml、.xml、.mxl"
+                    )
+
+            else:
+                st.warning(
+                    "前回選択したファイルが見つかりません。"
+                    "もう一度選択してください。"
+                )
+
                 st.session_state.pop(
-                    key,
+                    "pc_selected_musicxml_path",
                     None
                 )
 
-            # 推定前の表示へ戻す
-            st.session_state[
-                "preview_mode"
-            ] = "推定前"
 
-            st.session_state[
-                "preview_page"
-            ] = 0
+    # ------------------------------------------
+    # タブレット：iPadの「ファイル」から選択
+    # ------------------------------------------
+
+    else:
+
+        st.caption(
+            "iPadの「ファイル」アプリ内にある"
+            "MusicXMLを選択してください。"
+        )
+
+        uploaded_file = st.file_uploader(
+            "MusicXMLファイルを選択してください",
+            type=None,
+            key="ipad_musicxml_uploader",
+        )
+
+
+
+    # ------------------------------------------
+    # PC・iPad共通：選択後の処理
+    # ------------------------------------------
+
+    if uploaded_file is not None:
+
+        file_suffix = Path(
+            uploaded_file.name
+        ).suffix.lower()
+
+        if file_suffix not in allowed_suffixes:
+
+            st.error(
+                "MusicXML形式のファイルを"
+                "選択してください。"
+            )
+
+            st.caption(
+                "対応形式：.musicxml、.xml、.mxl"
+            )
+
+            uploaded_file = None
+
+        else:
+
+            st.success(
+                f"「{uploaded_file.name}」を"
+                "選択しました。"
+            )
+
+            input_file_data = (
+                uploaded_file.getvalue()
+            )
+
+            input_file_id = hashlib.sha256(
+                input_file_data
+            ).hexdigest()
+
+
+            # 別の楽譜を選択した場合
+            if (
+                st.session_state.get(
+                    "input_file_id"
+                )
+                != input_file_id
+            ):
+
+                st.session_state[
+                    "input_file_id"
+                ] = input_file_id
+
+                result_keys = [
+                    "result_musicxml",
+                    "result_download_name",
+                    "result_pdf",
+                    "result_pdf_download_name",
+                    "result_event_count",
+                    "result_path_count",
+                    "result_load_seconds",
+                    "result_estimate_seconds",
+                    "result_output_seconds",
+                    "result_total_seconds",
+                    "result_level",
+                ]
+
+                for key in result_keys:
+                    st.session_state.pop(
+                        key,
+                        None
+                    )
+
+                # 推定前の表示へ戻す
+                st.session_state[
+                    "preview_mode"
+                ] = "推定前"
+
+                st.session_state[
+                    "preview_page"
+                ] = 0
+
+                st.session_state.pop(
+                    "preview_file_id",
+                    None
+                )
 
 
     # ------------------------------------------
@@ -682,28 +978,45 @@ with left_column:
             "6. 結果を保存"
         )
 
-        musicxml_column, pdf_column = (
-            st.columns(2)
-        )
+        # ----------------------------------
+        # 端末ごとにダウンロード表示を変更
+        # ----------------------------------
 
+        if device_mode == "PC":
 
-        with musicxml_column:
+            musicxml_column, pdf_column = st.columns(2)
 
-            st.download_button(
-                label="MusicXMLをダウンロード",
-                data=st.session_state[
-                    "result_musicxml"
-                ],
-                file_name=st.session_state[
-                    "result_download_name"
-                ],
-                mime="application/vnd.recordare.musicxml+xml",
-                type="primary",
-                use_container_width=True
-            )
+            with musicxml_column:
 
+                st.download_button(
+                    label="MusicXMLをダウンロード",
+                    data=st.session_state[
+                        "result_musicxml"
+                    ],
+                    file_name=st.session_state[
+                        "result_download_name"
+                    ],
+                    mime="application/octet-stream",
+                    type="primary",
+                    use_container_width=True
+                )
 
-        with pdf_column:
+            with pdf_column:
+
+                st.download_button(
+                    label="PDFをダウンロード",
+                    data=st.session_state[
+                        "result_pdf"
+                    ],
+                    file_name=st.session_state[
+                        "result_pdf_download_name"
+                    ],
+                    mime="application/pdf",
+                    type="primary",
+                    use_container_width=True
+                )
+
+        else:
 
             st.download_button(
                 label="PDFをダウンロード",
@@ -713,7 +1026,7 @@ with left_column:
                 file_name=st.session_state[
                     "result_pdf_download_name"
                 ],
-                mime="application/pdf",
+                mime="application/octet-stream",
                 type="primary",
                 use_container_width=True
             )
@@ -1012,11 +1325,24 @@ with right_column:
                 # 現在のページを表示
                 # ==================================
 
-                st.image(
-                    preview_images[
-                        current_page
-                    ],
-                    use_container_width=True
+                image_base64 = base64.b64encode(
+                    preview_images[current_page]
+                ).decode("utf-8")
+
+                st.markdown(
+                    f"""
+                    <div style="width:100%; text-align:center;">
+                        <img
+                            src="data:image/jpeg;base64,{image_base64}"
+                            style="
+                                width:100%;
+                                height:auto;
+                                display:block;
+                            "
+                        >
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
 
 
