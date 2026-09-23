@@ -818,7 +818,8 @@ def build_timeline_events(score):
                     "end": info["end"],
                     "pitch": info["pitch"],
                     "element": info["element"],
-                    "pitch_index": info["pitch_index"]
+                    "pitch_index": info[
+                        "pitch_index"]
                 })
 
         if active_items:
