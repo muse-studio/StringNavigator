@@ -12,12 +12,14 @@ from pathlib import Path
 
 import streamlit as st
 
-from fingering import (
-    annotate_score_with_fingering,
-    estimate_fingering_segmented,
+from fingering_1to4voices_cached_fixed import (
     load_musicxml,
+    build_timeline_events,
+    timeline_to_events,
+    estimate_fingering_segmented,
+    build_source_state_map,
+    annotate_score_with_source_states,
 )
-
 
 # ==========================================
 # PC側のネイティブファイル選択用
@@ -619,59 +621,59 @@ with left_column:
             )
 
 
-        # ------------------------------------------
-        # 3. 演奏者の設定
-        # ------------------------------------------
+    # ------------------------------------------
+    # 3. 演奏者の設定
+    # ------------------------------------------
 
-        with st.expander("3. 演奏者の設定", expanded=False):
+    with st.expander("3. 演奏者の設定", expanded=False):
 
-            # 演奏レベル
-            st.markdown("**演奏レベル**")
+        # 演奏レベル
+        st.markdown("**演奏レベル**")
 
-            level = st.radio(
-                "提案する運指の種類を選んでください",
-                options=["初心者", "中級者"],
-                index=0,
-                horizontal=True
+        level = st.radio(
+            "提案する運指の種類を選んでください",
+            options=["初心者", "中級者"],
+            index=0,
+            horizontal=True
+        )
+
+        if level == "初心者":
+            mode_name = "Beginner"
+            L = math.inf
+
+            st.info(
+                "弾きやすさを優先した運指を提案します。"
             )
 
-            if level == "初心者":
-                mode_name = "Beginner"
-                L = math.inf
+        else:
+            mode_name = "Intermediate"
+            L = 0.1
 
-                st.info(
-                    "弾きやすさを優先した運指を提案します。"
-                )
-
-            else:
-                mode_name = "Intermediate"
-                L = 0.1
-
-                st.info(
-                    "表現の幅を考慮した運指を提案します。"
-                )
-
-            st.divider()
-
-            # 使用できるポジション
-            st.markdown("**使用できるポジション**")
-
-            max_position = st.radio(
-                "使用するポジションの上限を選択してください",
-                options=[
-                    "第1ポジションまで",
-                    "第3ポジションまで",
-                    "第5ポジションまで"
-                ],
-                index=0,
-                horizontal=True,
-                key="max_position"
+            st.info(
+                "表現の幅を考慮した運指を提案します。"
             )
 
-            st.caption(
-                "※ ポジション制限は今後の実装で"
-                "運指推定に反映します。"
-            )
+        st.divider()
+
+        # 使用できるポジション
+        st.markdown("**使用できるポジション**")
+
+        max_position = st.radio(
+            "使用するポジションの上限を選択してください",
+            options=[
+                "第1ポジションまで",
+                "第3ポジションまで",
+                "第5ポジションまで"
+            ],
+            index=0,
+            horizontal=True,
+            key="max_position"
+        )
+
+        st.caption(
+            "※ ポジション制限は今後の実装で"
+            "運指推定に反映します。"
+        )
 
 
     # ------------------------------------------
@@ -760,8 +762,13 @@ with left_column:
 
                     load_start = time.perf_counter()
 
-                    score, events, note_lengths = (
-                        load_musicxml(input_path)
+                    score, _, _, bpm = load_musicxml(input_path)
+
+                    timeline_events = build_timeline_events(score)
+
+                    events, note_lengths = timeline_to_events(
+                        timeline_events,
+                        bpm
                     )
 
                     load_seconds = (
@@ -776,16 +783,14 @@ with left_column:
 
                     estimate_start = time.perf_counter()
 
-                    best_path = (
-                        estimate_fingering_segmented(
-                            score,
-                            events,
-                            note_lengths,
-                            L,
-                            long_note_threshold=(
-                                long_note_threshold
-                            )
-                        )
+                    best_path = estimate_fingering_segmented(
+                        score,
+                        events,
+                        note_lengths,
+                        timeline_events,
+                        bpm,
+                        L,
+                        long_note_threshold=long_note_threshold
                     )
 
                     estimate_seconds = (
@@ -800,13 +805,21 @@ with left_column:
 
                     output_start = time.perf_counter()
 
-                    annotated_score = (
-                        annotate_score_with_fingering(
-                            score,
-                            best_path,
-                            mode_name
-                        )
+                    # 時間軸上の推定結果を元の音符に対応させる
+                    source_state_map = build_source_state_map(
+                        timeline_events,
+                        best_path
                     )
+
+                    # 楽譜に指番号を書き込む
+                    annotate_score_with_source_states(
+                        score,
+                        timeline_events,
+                        source_state_map
+                    )
+
+                    # 指番号を書き込んだ楽譜
+                    annotated_score = score
 
                     output_path = (
                         Path(temp_dir)
