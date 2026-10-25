@@ -619,38 +619,59 @@ with left_column:
             )
 
 
-    # ------------------------------------------
-    # 3. 演奏レベルの設定
-    # ------------------------------------------
+        # ------------------------------------------
+        # 3. 演奏者の設定
+        # ------------------------------------------
 
-    st.subheader("3. 演奏レベルを選択")
+        with st.expander("3. 演奏者の設定", expanded=False):
 
+            # 演奏レベル
+            st.markdown("**演奏レベル**")
 
-    level = st.radio(
-        "提案する運指の種類を選んでください",
-        options=["初心者", "中級者"],
-        index=0,
-        horizontal=True
-    )
+            level = st.radio(
+                "提案する運指の種類を選んでください",
+                options=["初心者", "中級者"],
+                index=0,
+                horizontal=True
+            )
 
+            if level == "初心者":
+                mode_name = "Beginner"
+                L = math.inf
 
-    if level == "初心者":
+                st.info(
+                    "弾きやすさを優先した運指を提案します。"
+                )
 
-        mode_name = "Beginner"
-        L = math.inf
+            else:
+                mode_name = "Intermediate"
+                L = 0.1
 
-        st.info(
-            "弾きやすさを優先した運指を提案します。"
-        )
+                st.info(
+                    "表現の幅を考慮した運指を提案します。"
+                )
 
-    else:
+            st.divider()
 
-        mode_name = "Intermediate"
-        L = 0.1
+            # 使用できるポジション
+            st.markdown("**使用できるポジション**")
 
-        st.info(
-            "表現の幅を考慮した運指を提案します。"
-        )
+            max_position = st.radio(
+                "使用するポジションの上限を選択してください",
+                options=[
+                    "第1ポジションまで",
+                    "第3ポジションまで",
+                    "第5ポジションまで"
+                ],
+                index=0,
+                horizontal=True,
+                key="max_position"
+            )
+
+            st.caption(
+                "※ ポジション制限は今後の実装で"
+                "運指推定に反映します。"
+            )
 
 
     # ------------------------------------------
