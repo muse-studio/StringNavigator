@@ -33,6 +33,33 @@ from double_stop_prepare import (
 )
 
 
+# ポジション番号とHPの対応（暫定）
+# 8は「第8ポジション以上」を表す
+POSITION_HP_MAP = {
+    1: {0, 1},
+    2: {2, 3},
+    3: {4, 5},
+    4: {6},
+    5: {7, 8},
+    6: {9, 10},
+    7: {11},
+    8: set(range(12, 24)),
+}
+
+def get_allowed_hp(selected_positions):
+    """選択したポジションに対応するHPを取得する。"""
+
+    if selected_positions is None:
+        return None
+
+    allowed_hp = set()
+
+    for position in selected_positions:
+        allowed_hp.update(POSITION_HP_MAP[position])
+
+    return allowed_hp
+
+
 # k と σ^2 の設定値
 # ※ ここでは sigma ではなく、論文の式に入れる「分散 σ^2」を入力します。
 
@@ -709,14 +736,12 @@ def sustained_notes_are_valid(
 
 
 def estimate_fingering(
-
         events,
-
         note_lengths,
-
         L,
-
-        timeline_events=None):
+        timeline_events=None,
+        selected_positions=None
+):
 
 
 
@@ -747,17 +772,29 @@ def estimate_fingering(
 
 
     # 単音・二重音・三重音・四重音を
-
     # MusicStateとして候補生成する
 
     all_music_states = [
-
         generate_event_music_states(event, generate_states_cached)
-
         for event in events
-
     ]
 
+    # 選択したポジションに対応するHPを取得
+    allowed_hp = get_allowed_hp(selected_positions)
+
+    # 使用できないポジションの候補を除外
+    if allowed_hp is not None:
+        all_music_states = [
+            [
+                music_state
+                for music_state in music_states
+                if all(
+                    state.fn == 0 or state.hp in allowed_hp
+                    for state in music_state.states
+                )
+            ]
+            for music_states in all_music_states
+        ]
 
 
     for i, music_states in enumerate(all_music_states):
@@ -1181,20 +1218,15 @@ def estimate_fingering(
 
 
 def estimate_fingering_segmented(
-
-        score,
-
-        events,
-
-        note_lengths,
-
-        timeline_events,
-
-        bpm,
-
-        L,
-
-        long_note_threshold=2.0):
+    score,
+    events,
+    note_lengths,
+    timeline_events,
+    bpm,
+    L,
+    long_note_threshold=2.0,
+    selected_positions=None
+):
 
 
 
@@ -1259,15 +1291,11 @@ def estimate_fingering_segmented(
 
 
         segment_path = estimate_fingering(
-
             events[s:e],
-
             note_lengths[s:e],
-
             L,
-
-            timeline_events[s:e]
-
+            timeline_events[s:e],
+            selected_positions=selected_positions
         )
 
 

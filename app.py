@@ -658,21 +658,37 @@ with left_column:
         # 使用できるポジション
         st.markdown("**使用できるポジション**")
 
-        max_position = st.radio(
-            "使用するポジションの上限を選択してください",
-            options=[
-                "第1ポジションまで",
-                "第3ポジションまで",
-                "第5ポジションまで"
-            ],
-            index=0,
-            horizontal=True,
-            key="max_position"
-        )
+        # 使用できるポジション
+        st.markdown("**使用できるポジション（複数選択可）**")
+
+        selected_positions = []
+
+        col1, col2 = st.columns(2)
+
+        for position in range(1, 8):
+
+            # 左右交互に配置
+            column = col1 if position % 2 == 1 else col2
+
+            with column:
+                if st.checkbox(
+                    f"第{position}ポジション",
+                    value=(position == 1),
+                    key=f"position_{position}"
+                ):
+                    selected_positions.append(position)
+
+        # 第8ポジション以上
+        if st.checkbox(
+            "第8ポジション以上",
+            value=False,
+            key="position_8_plus"
+        ):
+            selected_positions.append(8)
 
         st.caption(
-            "※ ポジション制限は今後の実装で"
-            "運指推定に反映します。"
+            "※ 現在は選択UIのみです。"
+            "ポジション正弦波っ今後、運指推定に反映します。"
         )
 
 
@@ -790,7 +806,8 @@ with left_column:
                         timeline_events,
                         bpm,
                         L,
-                        long_note_threshold=long_note_threshold
+                        long_note_threshold=long_note_threshold,
+                        selected_positions=selected_positions
                     )
 
                     estimate_seconds = (
