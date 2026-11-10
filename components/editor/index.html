@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>StringNavigator 楽譜編集試作</title>
+
+
+    <style>
+        #score {
+            width: 100%;
+            min-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <h2>StringNavigator 楽譜表示テスト</h2>
+    <button id="export-edits">修正情報を保存（JSON）</button>
+    <div id="score"></div>
+        <div id="note-info">
+        <h3>選択した音符の情報</h3>
+
+        <p>小節番号：<span id="measure-number">未選択</span></p>
+        <p>音高（MIDI）：<span id="note-pitch">未選択</span></p>
+
+        <label for="finger-select">指番号：</label>
+        <select id="finger-select" disabled>
+            <option value="">音符を選択してください</option>
+            <option value="0">0（開放弦）</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+        </select>
+    </div>
+
+
+
+
+</body>
+</html>

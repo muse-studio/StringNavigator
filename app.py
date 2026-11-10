@@ -7,6 +7,8 @@ import time
 from io import BytesIO
 from PIL import Image
 from music21 import converter
+from components.editor import score_editor
+from algorithms.fixed_fingering import build_fixed_fingers_by_event
 
 from pathlib import Path
 
@@ -278,6 +280,108 @@ st.set_page_config(
     layout="wide"
 )
 
+# ==========================================
+# 固定条件付き運指再提案の共通処理
+# ==========================================
+
+def run_refingering(
+    uploaded_file,
+    fixed_notes,
+    L,
+    long_note_threshold,
+    selected_positions
+):
+    """
+    指定した固定条件で運指を再計算し、
+    MusicXMLとPDFを返す。
+    """
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+
+        input_suffix = Path(uploaded_file.name).suffix
+
+        original_path = (
+            Path(temp_dir) / f"original{input_suffix}"
+        )
+
+        original_path.write_bytes(
+            uploaded_file.getvalue()
+        )
+
+        # 元の楽譜を読み込む
+        original_score, _, _, original_bpm = load_musicxml(
+            original_path
+        )
+
+        original_timeline = build_timeline_events(
+            original_score
+        )
+
+        # 固定条件をDP用に変換
+        fixed = build_fixed_fingers_by_event(
+            original_timeline,
+            fixed_notes
+        )
+
+        
+
+        # 時間軸イベントを生成
+        events, note_lengths = timeline_to_events(
+            original_timeline,
+            original_bpm
+        )
+
+        # 固定条件付きDP
+        best_path = estimate_fingering_segmented(
+            original_score,
+            events,
+            note_lengths,
+            original_timeline,
+            original_bpm,
+            L,
+            long_note_threshold=long_note_threshold,
+            selected_positions=selected_positions,
+            fixed_fingers_by_event=fixed,
+        )
+
+        # 推定結果を元の音符に対応付ける
+        source_state_map = build_source_state_map(
+            original_timeline,
+            best_path
+        )
+
+        # 楽譜に指番号を書き込む
+        annotate_score_with_source_states(
+            original_score,
+            original_timeline,
+            source_state_map
+        )
+
+        # MusicXMLを出力
+        output_path = (
+            Path(temp_dir) / "refingering_result.musicxml"
+        )
+
+        original_score.write(
+            "musicxml",
+            fp=str(output_path)
+        )
+
+        updated_musicxml = output_path.read_bytes()
+
+        # PDFを出力
+        pdf_path = (
+            Path(temp_dir) / "refingering_result.pdf"
+        )
+
+        original_score.write(
+            "musicxml.pdf",
+            fp=str(pdf_path)
+        )
+
+        updated_pdf = pdf_path.read_bytes()
+
+    return updated_musicxml, updated_pdf
 
 
 # ==========================================
@@ -478,6 +582,18 @@ with left_column:
             key="ipad_musicxml_uploader",
         )
 
+    # ------------------------------------------
+    # 修正指番号JSONのアップロード
+    # ------------------------------------------
+
+    fixed_fingering_json = st.file_uploader(
+        "修正した指番号のJSONファイル（任意）",
+        type=["json"],
+        key="fixed_fingering_json_uploader",
+        help="指番号を固定して運指を再提案する場合に指定してください。"
+    )
+
+
 
 
     # ------------------------------------------
@@ -550,6 +666,10 @@ with left_column:
                         key,
                         None
                     )
+
+                # 別の楽譜を選択した場合、固定条件を初期化
+                st.session_state["fixed_notes"] = []
+                st.session_state["edit_history"] = []
 
                 # 推定前の表示へ戻す
                 st.session_state[
@@ -1122,6 +1242,12 @@ with left_column:
                     None
                 )
 
+            # やり直す場合、過去の固定条件を初期化
+            st.session_state["fixed_notes"] = []
+
+            st.session_state["preview_mode"] = "推定前"
+            st.session_state["preview_page"] = 0
+
             st.session_state[
                 "preview_mode"
             ] = "推定前"
@@ -1415,3 +1541,441 @@ with right_column:
                 ):
 
                     st.exception(error)
+
+
+# ==========================================
+# 運指付き楽譜の編集
+# ==========================================
+
+# ==========================================
+# 過去の修正指番号を保持
+# ==========================================
+
+if "fixed_notes" not in st.session_state:
+    st.session_state["fixed_notes"] = []
+
+# 指番号の修正履歴を保持
+if "edit_history" not in st.session_state:
+    st.session_state["edit_history"] = []
+
+if "result_musicxml" in st.session_state:
+
+    st.divider()
+
+    st.subheader("運指付き楽譜の編集")
+
+    st.caption(
+        "運指推定後の楽譜を表示します。"
+    )
+
+    musicxml_data = st.session_state[
+        "result_musicxml"
+    ]
+
+    if isinstance(musicxml_data, bytes):
+        musicxml_text = musicxml_data.decode("utf-8")
+    else:
+        musicxml_text = musicxml_data
+
+    editor_result = score_editor(
+        data={"musicxml": musicxml_text},
+        key="main_score_editor",
+    )
+
+    # JavaScriptから指番号の修正情報を取得
+    if editor_result is not None:
+
+        edited_notes = getattr(
+            editor_result,
+            "edited_notes",
+            None
+        )
+
+        if edited_notes is not None:
+
+            st.write("修正した指番号")
+            st.json(edited_notes)
+
+
+            # 元のMusicXMLから再提案用の楽譜を読み込む
+            if uploaded_file is not None:
+
+                with tempfile.TemporaryDirectory() as temp_dir:
+
+                    input_suffix = Path(uploaded_file.name).suffix
+
+                    original_path = (
+                        Path(temp_dir) / f"original{input_suffix}"
+                    )
+
+                    original_path.write_bytes(
+                        uploaded_file.getvalue()
+                    )
+
+                    original_score, _, _, original_bpm = load_musicxml(
+                        original_path
+                    )
+
+                    original_timeline = build_timeline_events(
+                        original_score
+                    )
+
+                    fixed = build_fixed_fingers_by_event(
+                        original_timeline,
+                        edited_notes
+                    )
+
+                    fixed_summary = [
+                        (i, item)
+                        for i, item in enumerate(fixed)
+                        if item
+                    ]
+
+                    st.write("DP用の固定指番号")
+                    st.write(fixed_summary)
+
+                    st.write("BPM:", original_bpm)
+
+                    # ==========================================
+                    # 固定指番号による運指の再提案
+                    # ==========================================
+
+                    keep_previous = st.checkbox(
+                        "過去の修正を維持する",
+                        value=True,
+                        key="keep_previous_fingering",
+                        help=(
+                            "ON：過去と今回の修正を固定します。"
+                            "OFF：今回の修正だけを固定します。"
+                        ),
+                    )
+
+                    if st.button(
+                        "固定指番号で再提案",
+                        key="main_refingering_button"
+                    ):
+
+                        try:
+                            # 過去の修正を利用するか選択
+                            if keep_previous:
+                                merged_notes = [
+                                    note.copy()
+                                    for note in st.session_state["fixed_notes"]
+                                ]
+                            else:
+                                merged_notes = []
+
+                            # 今回の修正を追加・上書き
+                            for new_note in edited_notes:
+
+                                existing_index = next(
+                                    (
+                                        i
+                                        for i, note in enumerate(merged_notes)
+                                        if (
+                                            note["partId"] == new_note["partId"]
+                                            and note["voiceId"] == new_note["voiceId"]
+                                            and note["measureNumber"] == new_note["measureNumber"]
+                                            and note["offset"] == new_note["offset"]
+                                            and note["midi"] == new_note["midi"]
+                                        )
+                                    ),
+                                    None
+                                )
+
+                                if existing_index is not None:
+                                    merged_notes[existing_index] = new_note.copy()
+                                else:
+                                    merged_notes.append(new_note.copy())
+
+                            # 統合した修正情報をDP用固定条件に変換
+                            fixed = build_fixed_fingers_by_event(
+                                original_timeline,
+                                merged_notes
+                            )
+
+                            with st.spinner("運指を再計算しています..."):
+
+                                updated_musicxml, updated_pdf = run_refingering(
+                                    uploaded_file=uploaded_file,
+                                    fixed_notes=merged_notes,
+                                    L=L,
+                                    long_note_threshold=long_note_threshold,
+                                    selected_positions=selected_positions
+                                )
+                            # 再提案が成功した場合のみ固定情報を保存
+                            st.session_state["fixed_notes"] = merged_notes    
+
+                            # 今回の修正を履歴に追加
+                            from datetime import datetime
+                            from zoneinfo import ZoneInfo
+
+                            for note in edited_notes:
+                                history_item = {
+                                    "partId": note["partId"],
+                                    "voiceId": note["voiceId"],
+                                    "measureNumber": note["measureNumber"],
+                                    "offset": note["offset"],
+                                    "midi": note["midi"],
+                                    "before_fingering": note.get("before_fingering"),
+                                    "after_fingering": note["fingering"],
+                                    "timestamp": datetime.now(
+                                        ZoneInfo("Asia/Tokyo")
+                                    ).isoformat(timespec="seconds"),
+                                }
+
+                                st.session_state["edit_history"].append(history_item)
+
+                            # 再提案結果を保存
+                            st.session_state[
+                                "result_musicxml"
+                            ] = updated_musicxml
+
+                            # 再提案後のPDFも保存
+                            st.session_state[
+                            "result_pdf"
+                            ] = updated_pdf
+
+                            # プレビューのページを先頭に戻す
+                            st.session_state["preview_page"] = 0
+
+                            # 画面を更新
+                            st.rerun()
+
+                        except Exception as error:
+                            st.error(
+                                "固定指番号による再提案に失敗しました。"
+                            )
+                            st.exception(error)
+
+# ==========================================
+# 現在の固定指番号の一覧
+# ==========================================
+
+st.subheader("現在の固定指番号")
+
+fixed_notes = st.session_state.get("fixed_notes", [])
+
+st.write("固定されている音符数:", len(fixed_notes))
+
+if fixed_notes:
+
+    fixed_table = []
+
+    for i, note in enumerate(fixed_notes):
+
+        fixed_table.append({
+            "番号": i + 1,
+            "小節": note.get("measureNumber"),
+            "声部": note.get("voiceId"),
+            "MIDI": note.get("midi"),
+            "固定指番号": note.get("fingering"),
+        })
+
+    st.dataframe(
+        fixed_table,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # ==========================================
+    # 固定指番号の個別解除
+    # ==========================================
+
+    st.markdown("**固定指番号の個別解除**")
+
+    selected_fixed = st.selectbox(
+        "解除する固定指番号を選択",
+        options=list(range(len(fixed_notes))),
+        format_func=lambda i: (
+            f"小節{fixed_notes[i].get('measureNumber')} / "
+            f"声部{fixed_notes[i].get('voiceId')} / "
+            f"MIDI{fixed_notes[i].get('midi')} / "
+            f"指番号{fixed_notes[i].get('fingering')}"
+        ),
+        key="selected_fixed_to_remove"
+    )
+
+    if st.button(
+        "選択した固定条件を解除",
+        key="remove_selected_fixed"
+    ):
+        st.session_state["fixed_notes"].pop(selected_fixed)
+        st.rerun()
+
+    # ==========================================
+    # 残りの固定条件で運指を再提案
+    # ==========================================
+
+    st.markdown("**固定条件を反映した運指の再提案**")
+
+    if st.button(
+        "残りの固定条件で再提案",
+        key="refingering_after_removal",
+        disabled=(uploaded_file is None)
+    ):
+        try:
+            remaining_notes = [
+                note.copy()
+                for note in st.session_state["fixed_notes"]
+            ]
+
+            with st.spinner("残りの固定条件で運指を再計算しています..."):
+                updated_musicxml, updated_pdf = run_refingering(
+                    uploaded_file=uploaded_file,
+                    fixed_notes=remaining_notes,
+                    L=L,
+                    long_note_threshold=long_note_threshold,
+                    selected_positions=selected_positions
+                )
+
+            st.session_state["result_musicxml"] = updated_musicxml
+            st.session_state["result_pdf"] = updated_pdf
+            st.session_state["preview_page"] = 0
+
+            # 修正履歴は変更しない
+            st.rerun()
+
+        except Exception as error:
+            st.error("残りの固定条件による再提案に失敗しました。")
+            st.exception(error)
+
+else:
+    st.info("現在、固定されている指番号はありません。")
+
+# ==========================================
+# 固定条件が0件の場合の再提案
+# ==========================================
+
+if (
+    not st.session_state["fixed_notes"]
+    and "result_musicxml" in st.session_state
+):
+    if st.button(
+        "固定条件なしで再提案",
+        key="refingering_without_fixed",
+        disabled=(uploaded_file is None)
+    ):
+        try:
+            with st.spinner("固定条件なしで運指を再計算しています..."):
+                updated_musicxml, updated_pdf = run_refingering(
+                    uploaded_file=uploaded_file,
+                    fixed_notes=[],
+                    L=L,
+                    long_note_threshold=long_note_threshold,
+                    selected_positions=selected_positions
+                )
+
+            st.session_state["result_musicxml"] = updated_musicxml
+            st.session_state["result_pdf"] = updated_pdf
+            st.session_state["preview_page"] = 0
+
+            # 修正履歴は保持する
+            st.rerun()
+
+        except Exception as error:
+            st.error("固定条件なしの再提案に失敗しました。")
+            st.exception(error)    
+
+# ==========================================
+# 修正履歴の表示
+# ==========================================
+
+st.subheader("指番号の修正履歴")
+
+history = st.session_state["edit_history"]
+
+st.write("保存された修正履歴数:", len(history))
+
+if history:
+
+    history_table = []
+
+    for item in history:
+        history_table.append({
+            "修正日時": item.get("timestamp", ""),
+            "小節": item.get("measureNumber", ""),
+            "MIDI": item.get("midi", ""),
+            "変更前": item.get("before_fingering"),
+            "変更後": item.get(
+                "after_fingering",
+                item.get("fingering")
+            ),
+        })
+
+    st.dataframe(
+        history_table,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # ==========================================
+    # 修正履歴の個別削除
+    # ==========================================
+
+    st.markdown("**修正履歴の個別削除**")
+
+    history_options = list(range(len(history)))
+
+    selected_history = st.selectbox(
+        "削除する修正履歴を選択",
+        options=history_options,
+        format_func=lambda i: (
+            f"履歴{i + 1}："
+            f"小節{history[i].get('measureNumber', '?')} / "
+            f"MIDI{history[i].get('midi', '?')} / "
+            f"{history[i].get('before_fingering', '?')}"
+            f" → "
+            f"{history[i].get('after_fingering', '?')}"
+        ),
+        key="selected_history_to_delete"
+    )
+
+    if st.button(
+        "選択した履歴を削除",
+        key="delete_selected_history"
+    ):
+        st.session_state["edit_history"].pop(
+            selected_history
+        )
+
+        st.success("選択した修正履歴を削除しました。")
+        st.rerun()
+
+    # ==========================================
+    # 修正履歴の一括削除
+    # ==========================================
+
+    if "confirm_clear_history" not in st.session_state:
+        st.session_state["confirm_clear_history"] = False
+
+    if not st.session_state["confirm_clear_history"]:
+
+        if st.button("修正履歴をすべて削除"):
+            st.session_state["confirm_clear_history"] = True
+            st.rerun()
+
+    else:
+
+        st.warning(
+            "すべての修正履歴を削除します。"
+            "この操作は取り消せません。"
+        )
+
+        delete_col, cancel_col = st.columns(2)
+
+        with delete_col:
+            if st.button("削除する", type="primary"):
+                st.session_state["edit_history"] = []
+                st.session_state["confirm_clear_history"] = False
+                st.rerun()
+
+        with cancel_col:
+            if st.button("キャンセル"):
+                st.session_state["confirm_clear_history"] = False
+                st.rerun()
+
+
+
+else:
+    st.info("修正履歴はまだありません。")

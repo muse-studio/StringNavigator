@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 from pathlib import Path
 from functools import lru_cache
+from algorithms.fixed_fingering import filter_music_states_by_fixed_fingers
 
 from music21 import (
     articulations,
@@ -740,7 +741,8 @@ def estimate_fingering(
         note_lengths,
         L,
         timeline_events=None,
-        selected_positions=None
+        selected_positions=None,
+        fixed_fingers_by_event = None
 ):
 
 
@@ -758,16 +760,21 @@ def estimate_fingering(
     if (
 
             timeline_events is not None
-
             and len(events) != len(timeline_events)
 
         ):
 
             raise ValueError(
-
                 "events と timeline_events の長さが一致していません"
-
             )
+
+    if (
+        fixed_fingers_by_event is not None
+        and len(events) != len(fixed_fingers_by_event)
+    ):
+        raise ValueError(
+            "events と fixed_fingers_by_event の長さが一致していません"
+        )
 
 
 
@@ -796,6 +803,16 @@ def estimate_fingering(
             for music_states in all_music_states
         ]
 
+    # 固定指番号に一致する運指候補だけを残す
+    if fixed_fingers_by_event is not None:
+        all_music_states = [
+            filter_music_states_by_fixed_fingers(
+                music_states,
+                events[i],
+                fixed_fingers_by_event[i]
+            )
+            for i, music_states in enumerate(all_music_states)
+        ]
 
     for i, music_states in enumerate(all_music_states):
 
@@ -1225,7 +1242,8 @@ def estimate_fingering_segmented(
     bpm,
     L,
     long_note_threshold=2.0,
-    selected_positions=None
+    selected_positions=None,
+    fixed_fingers_by_event=None
 ):
 
 
@@ -1291,12 +1309,17 @@ def estimate_fingering_segmented(
 
 
         segment_path = estimate_fingering(
-            events[s:e],
-            note_lengths[s:e],
-            L,
-            timeline_events[s:e],
-            selected_positions=selected_positions
+        events[s:e],
+        note_lengths[s:e],
+        L,
+        timeline_events[s:e],
+        selected_positions=selected_positions,
+        fixed_fingers_by_event=(
+            fixed_fingers_by_event[s:e]
+            if fixed_fingers_by_event is not None
+            else None
         )
+    )
 
 
 

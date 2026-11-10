@@ -162,6 +162,50 @@ def is_valid_multiple_state_combination(states):
     if len(pressed_fi_patterns) > 1:
         return False
 
+    
+    # 同じ指を複数の弦で使用する場合の判定
+    finger_groups = {}
+
+    for state in states:
+        # 開放弦は指を使用しない
+        if state.fn == 0:
+            continue
+
+        finger_groups.setdefault(state.fn, []).append(state)
+
+    for fn, group in finger_groups.items():
+        if len(group) <= 1:
+            continue
+
+        # 同じ指を3本以上の弦で使用しない
+        if len(group) > 2:
+            return False
+
+        state1, state2 = group
+
+        # 隣接する弦であること
+        if abs(state1.sp - state2.sp) != 1:
+            return False
+
+        # 開放弦からの押弦位置が一致すること
+        open_pitch1 = Strings[state1.sp][1]
+        open_pitch2 = Strings[state2.sp][1]
+
+        position1 = (
+            state1.hp
+            + finger_offset(state1.fn, state1.fi)
+            + 1
+        )
+        position2 = (
+            state2.hp
+            + finger_offset(state2.fn, state2.fi)
+            + 1
+        )
+
+        if position1 != position2:
+            return False
+
+
     return True
 
 

@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>StringNavigator 楽譜編集試作</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.9.5/build/opensheetmusicdisplay.min.js"></script>
+
+    <style>
+        #score {
+            width: 100%;
+            min-width: 800px;
+        }
+    </style>
+</head>
+<body>
+    <h2>StringNavigator 楽譜表示テスト</h2>
+    <button id="export-edits">修正情報を保存（JSON）</button>
+    <div id="score"></div>
+        <div id="note-info">
+        <h3>選択した音符の情報</h3>
+
+        <p>小節番号：<span id="measure-number">未選択</span></p>
+        <p>音高（MIDI）：<span id="note-pitch">未選択</span></p>
+
+        <label for="finger-select">指番号：</label>
+        <select id="finger-select" disabled>
+            <option value="">音符を選択してください</option>
+            <option value="0">0（開放弦）</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+        </select>
+    </div>
+
+
+
+    <script>
+        // OSMDの初期化
+        const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(
+            "score",
+            {
+                autoResize: true,
+                backend: "svg"
+            }
+        );
+
+        console.log("OSMDの初期化が完了しました");
+
+        // MusicXMLの読み込みと楽譜表示
+        fetch("test.musicxml")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("MusicXMLの読み込みに失敗しました");
+                }
+                return response.text();
+            })
+            .then(xml => osmd.load(xml))
+            .then(() => osmd.render())
+            .then(() => {
+                console.log("楽譜の表示が完了しました");
+            })
+            .catch(error => {
+                console.error("楽譜表示エラー:", error);
+            });
+
+        // 現在選択されている符頭
+        let selectedNotehead = null;
+
+        let selectedSourceNote = null;
+        let selectedNoteInfo = null;
+        const editedNotes = [];
+
+        document.getElementById("export-edits").addEventListener("click", function() {
+
+        const json = JSON.stringify(editedNotes, null, 2);
+
+        const blob = new Blob([json], {
+            type: "application/json"
+        });
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "fingering_edits.json";
+        a.click();
+
+        URL.revokeObjectURL(url);
+
+        console.log("修正情報をJSONとして保存しました");
+    });
+
+        // 符頭のクリック処理
+        document.getElementById("score").addEventListener("click", function(event) {
+
+            // クリックした符頭を取得
+            const notehead = event.target.closest(".vf-notehead");
+
+            // 符頭以外をクリックした場合は何もしない
+            if (!notehead) {
+                return;
+            }
+
+            // 前に選択した符頭の色を元に戻す
+            if (selectedNotehead) {
+                selectedNotehead.style.removeProperty("fill");
+
+                selectedNotehead.querySelectorAll("path").forEach(path => {
+                    path.style.removeProperty("fill");
+                });
+            }
+
+            // 新しく選択した符頭を青色にする
+            notehead.style.fill = "blue";
+
+            notehead.querySelectorAll("path").forEach(path => {
+                path.style.fill = "blue";
+            });
+
+            // 選択した符頭を記録
+            selectedNotehead = notehead;
+
+            console.log("選択した符頭:", notehead);
+
+            // 符頭が所属するVexFlowの音符を取得
+            const staveNote = notehead.closest(".vf-stavenote");
+
+            if (staveNote) {
+                console.log("VexFlowの音符ID:", staveNote.id);
+            }
+
+            // 符頭が所属する音符全体のSVG要素を取得
+            const noteElement = notehead.closest(".vf-note");
+
+            console.log("音符全体のSVG要素:", noteElement);
+
+            // SVGのIDから接頭辞「vf-」を除去
+            const vexflowId = staveNote.id.replace(/^vf-/, "");
+
+            // OSMD内部の小節を順番に調べる
+            for (const measureRow of osmd.GraphicSheet.measureList) {
+                for (const measure of measureRow) {
+                    if (!measure) continue;
+
+                    for (const staffEntry of measure.staffEntries) {
+                        for (const voiceEntry of staffEntry.graphicalVoiceEntries) {
+
+                            const vfNote = voiceEntry.mVexFlowStaveNote;
+
+                            if (vfNote?.attrs?.id === vexflowId) {
+
+                                // 対応する音符データ
+                                const graphicalNote = voiceEntry.notes[0];
+                                if (!graphicalNote) return;
+
+                                const sourceNote = graphicalNote.sourceNote;
+
+                                console.log("音符データ", sourceNote);
+
+                                console.log("開始時刻:", sourceNote.voiceEntry?.Timestamp);
+
+                                console.log("小節の開始時刻:", sourceNote.voiceEntry?.parentSourceStaffEntry?.parentMeasure?.AbsoluteTimestamp);
+
+                                console.log("StaffEntry:", sourceNote.voiceEntry?.parentSourceStaffEntry);
+
+                                console.log("時間位置のプロパティ:", Object.keys(sourceNote.voiceEntry?.parentSourceStaffEntry?.verticalContainerParent ?? {}));
+
+                                console.log("小節のプロパティ:", Object.keys(sourceNote.voiceEntry?.parentSourceStaffEntry?.verticalContainerParent?.parentMeasure ?? {}));
+
+                                console.log("小節の絶対開始時刻:", sourceNote.voiceEntry?.parentSourceStaffEntry?.verticalContainerParent?.parentMeasure?.absoluteTimestamp?.realValue);
+
+                                const measureStart = sourceNote.voiceEntry?.parentSourceStaffEntry
+                                    ?.verticalContainerParent?.parentMeasure?.absoluteTimestamp?.realValue;
+
+                                const noteStart = sourceNote.voiceEntry?.Timestamp?.realValue;
+
+                                const absoluteOffset = (measureStart + noteStart) * 4;
+
+                                console.log("music21基準の開始時刻:", absoluteOffset);
+
+                                console.log("音符の長さ:", sourceNote.Length);
+
+                                console.log("声部情報:", sourceNote.voiceEntry?.ParentVoice);
+
+                                console.log("声部のプロパティ:", Object.keys(sourceNote.voiceEntry?.ParentVoice ?? {}));
+
+                                console.log("声部ID:", sourceNote.voiceEntry?.ParentVoice?.voiceId);
+
+                                console.log("声部の親オブジェクト:", sourceNote.voiceEntry?.ParentVoice?.parent);
+
+                                console.log("パートのプロパティ:", Object.keys(sourceNote.voiceEntry?.ParentVoice?.parent ?? {}));
+
+                                console.log("パートID:", sourceNote.voiceEntry?.ParentVoice?.parent?.id);
+                                console.log("パートID文字列:", sourceNote.voiceEntry?.ParentVoice?.parent?.idString);
+
+                                selectedSourceNote = sourceNote;
+
+                                console.log("小節番号:", measure.measureNumber);
+                                console.log("音高（MIDI）:", sourceNote.halfTone);
+                                console.log("MIDI変換候補:", sourceNote.halfTone + 12);
+                                console.log("音高関連情報:", {
+                                    halfTone: sourceNote.halfTone,
+                                    pitch: sourceNote.Pitch,
+                                    octave: sourceNote.Pitch?.Octave,
+                                    fundamentalNote: sourceNote.Pitch?.FundamentalNote
+                                });
+
+                                console.log("指番号:", sourceNote.Fingering?.value ?? "なし");
+
+                                const noteInfo = {
+                                    partId: sourceNote.voiceEntry?.ParentVoice?.parent?.idString,
+                                    voiceId: sourceNote.voiceEntry?.ParentVoice?.voiceId,
+                                    measureNumber: measure.measureNumber,
+                                    offset: absoluteOffset,
+                                    midi: sourceNote.halfTone + 12,
+                                    fingering: sourceNote.Fingering?.value ?? null
+                                };
+
+                                console.log("音符の識別情報:", noteInfo);
+
+                                selectedNoteInfo = noteInfo;
+
+                                    // 選択した音符の情報を画面に表示
+                                    document.getElementById("measure-number").textContent =
+                                        measure.measureNumber;
+
+                                    document.getElementById("note-pitch").textContent =
+                                        sourceNote.halfTone;
+
+                                    // 現在の指番号を選択欄に表示
+                                    const fingerSelect = document.getElementById("finger-select");
+
+                                    fingerSelect.disabled = false;
+                                    fingerSelect.value = sourceNote.Fingering?.value ?? "";
+
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            console.log("対応する音符が見つかりませんでした");
+
+
+            if (noteElement) {
+                console.log("音符のID:", noteElement.id);
+                console.log("音符のクラス:", noteElement.getAttribute("class"));
+                console.log("音符のHTML:", noteElement.outerHTML);
+            }
+
+        });
+
+                // 指番号の変更処理
+                document.getElementById("finger-select").addEventListener("change", function(event) {
+
+                    const newFinger = event.target.value;
+
+                    // 音符が選択されていない場合
+                    if (!selectedSourceNote) {
+                        console.log("音符が選択されていません");
+                        return;
+                    }
+
+                    // 指番号データが存在するか確認
+                    if (!selectedSourceNote.Fingering) {
+                        console.log("この音符には指番号データがありません");
+                        return;
+                    }
+
+                    // 変更前の指番号
+                    console.log("変更前:", selectedSourceNote.Fingering.value);
+
+                    // 指番号を変更
+                    selectedSourceNote.Fingering.value = newFinger;
+
+                    // 変更後の指番号
+                    console.log("変更後:", selectedSourceNote.Fingering.value);
+
+                    const editedNote = {
+                        ...selectedNoteInfo,
+                        fingering: Number(newFinger)
+                    };
+
+                    console.log("指番号の修正データ:", editedNote);
+
+                    const existingIndex = editedNotes.findIndex(note =>
+                        note.partId === editedNote.partId &&
+                        note.voiceId === editedNote.voiceId &&
+                        note.measureNumber === editedNote.measureNumber &&
+                        note.offset === editedNote.offset &&
+                        note.midi === editedNote.midi
+                    );
+
+                    if (existingIndex >= 0) {
+                        editedNotes[existingIndex] = editedNote;
+                    } else {
+                        editedNotes.push(editedNote);
+                    }
+
+                    console.log("保存された修正一覧:", editedNotes);
+
+                    // 楽譜を再描画
+                    osmd.render();
+
+                    console.log("楽譜を再描画しました");
+
+                    // 再描画後は古いSVG要素を参照しない
+                    selectedNotehead = null;
+
+                });
+
+
+    </script>
+</body>
+</html>

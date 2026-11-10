@@ -1,0 +1,18 @@
+[
+  {
+    "partId": "P1",
+    "voiceId": 1,
+    "measureNumber": 1,
+    "offset": 0,
+    "midi": 72,
+    "fingering": 1
+  },
+  {
+    "partId": "P1",
+    "voiceId": 1,
+    "measureNumber": 1,
+    "offset": 0.5,
+    "midi": 72,
+    "fingering": 3
+  }
+]
